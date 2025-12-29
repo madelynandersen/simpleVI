@@ -1,0 +1,46 @@
+{
+    "lambda_like": 2.0,
+    "alpha_prior": 1.5,
+    "beta_prior": 1.0,
+    "n_samples": 0,
+    "grad_samps": 1000,
+    "max_iters": 5000,
+    "adam_step": 0.005,
+    "n_parallel": 100,
+    "conditional_params": {
+        "n_samples_0": {
+            "ylim_mu": [
+                0,
+                2
+            ],
+            "ylim_sigma": [
+                1,
+                1.5
+            ],
+            "xlim_pdf": [
+                0,
+                5
+            ]
+        },
+        "n_samples_else": {
+            "ylim_mu": [
+                2,
+                2.5
+            ],
+            "ylim_sigma": [
+                0,
+                1.0
+            ],
+            "xlim_pdf": [
+                1,
+                4
+            ]
+        }
+    },
+    "transformation": "exponential",
+    "best_elbo_np": -0.0895335003733635,
+    "best_mean": 0.06150122731924057,
+    "best_std": 0.821346640586853,
+    "last_updated": "2025-07-29T11:31:08.581549",
+    "best_method": "tfp"
+}

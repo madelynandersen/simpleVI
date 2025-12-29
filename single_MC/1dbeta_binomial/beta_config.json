@@ -1,0 +1,15 @@
+{
+    "theta_like": 0.7,
+    "alpha_prior": 0.5,
+    "beta_prior": 0.6,
+    "n_samples": 10,
+    "grad_samps": 100,
+    "max_iters": 100000,
+    "adam_step": 0.005,
+    "transformation": "sigmoid",
+    "last_updated": "2025-07-31T18:31:21.874281",
+    "best_method": "numpyro",
+    "best_elbo_np": 3.943281412124634,
+    "best_mean": 0.8212456107139587,
+    "best_std": 0.6695481538772583
+}

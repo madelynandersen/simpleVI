@@ -1,0 +1,16 @@
+{
+    "mu_like": 3.0,
+    "sigma_like": 0.5,
+    "alpha_prior": 4.0,
+    "beta_prior": 3.0,
+    "n_samples": 10,
+    "grad_samps": 100,
+    "max_iters": 50000,
+    "adam_step": 0.001,
+    "transformation": "exponential",
+    "best_elbo_np": -9.070253372192383,
+    "best_mean": -0.6889026165008545,
+    "best_std": 0.33332446217536926,
+    "last_updated": "2025-07-31T18:41:26.965239",
+    "best_method": "numpyro"
+}
