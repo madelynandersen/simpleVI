@@ -17,7 +17,7 @@ def beta_posterior(successes, trials, alpha_0, beta_0, *args, **kwargs):
         'std_post': np.sqrt(var_post)
     }
 
-def gaussian_1d_posterior(data, n_samples, mu_prior, sigma_prior, sigma_like):
+def gaussian_1d_posterior(data, n_samples=100, mu_prior=0, sigma_prior=1, sigma_like=10):
     true_mu_post = (sigma_like**2 * mu_prior + sigma_prior**2 * data.mean()) / (sigma_like**2 + sigma_prior**2)
     true_sigma_post = np.sqrt(1 / (1/sigma_prior**2 + 100/sigma_like**2))
     return true_mu_post, true_sigma_post
@@ -25,7 +25,7 @@ def gaussian_1d_posterior(data, n_samples, mu_prior, sigma_prior, sigma_like):
 """
 Helper functions for generating data
 """
-def gaussian_1d(n_samples, mu_like=5, sigma_like=1, seed=20):
+def gaussian_1d(n_samples=100, mu_like=5, sigma_like=1, seed=20):
     np.random.seed(seed)
     data = np.random.normal(mu_like, sigma_like, n_samples)
     return data
