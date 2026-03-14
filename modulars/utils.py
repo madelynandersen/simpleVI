@@ -89,14 +89,18 @@ def _trace_locscale_to_theta_moments(loc_trace, scale_trace, n_samples=10_000, s
 
 # a function to apply the given push-forward transformation
 # then stack the trajectories for easier plotting
-def apply_traj_transform(results, transform_fn, n_samples=50_000, seed=0, NOTEBOOK=True):
+def apply_traj_transform(results, transform_fn=None, n_samples=50_000, seed=0, NOTEBOOK=True):
     if NOTEBOOK:
         wrapper = tqdm
     else:
         wrapper = standard_tqdm
     single_means, single_stds = [], []
     multi_means,  multi_stds  = [], []
+
+    if transform_fn is None:
+        transform_fn = lambda loc, scale, **kwargs: (loc, scale)
     for single_loc_trace, single_scale_trace, multi_loc_trace, multi_scale_trace in wrapper(results):
+        
         # Use vectorized transformation for speed
         single_mu, single_sigma = transform_fn(
             single_loc_trace, single_scale_trace, n_samples=n_samples, seed=seed

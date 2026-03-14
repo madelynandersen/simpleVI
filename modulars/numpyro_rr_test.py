@@ -50,4 +50,4 @@ def run_restart_1d(seed, model, data, param_name, n_iters, n_particles = 100):
     
     single_elbo, single_tracker = run_svi(jax.random.PRNGKey(seed), y_data, single_svi, param_name, n_iters)
     multi_elbo, multi_tracker = run_svi(jax.random.PRNGKey(seed+1000), y_data, multi_svi, param_name, n_iters)
-    return single_elbo, single_tracker, multi_elbo, multi_tracker
+    return single_tracker['mu_loc'], single_tracker['std_loc'], multi_tracker['mu_loc'], multi_tracker['std_loc']
