@@ -68,24 +68,78 @@ def traces_to_lambda_moments(mu_trace, sigma_trace):
     return exp_lognormal_moments(mu_trace, sigma_trace)
 
 
-def _logistic_normal_mean_std_mc(mu, sigma, n_samples=10_000, seed=0):
-    mu = float(np.squeeze(mu))
-    sigma = float(np.squeeze(sigma))
+def logistic_moments(mu, sigma, n_samples=10_000, seed=0, batch_size=512, ddof=0, **_kwargs):
+    """
+    Compute moments of theta = sigmoid(Z), Z ~ Normal(mu, sigma).
+
+    Accepts either:
+      - scalar-like mu/sigma -> returns (float, float)
+      - trajectory-like mu/sigma arrays -> returns (np.ndarray, np.ndarray)
+    """
+    mu_arr = np.asarray(mu, dtype=float).squeeze()
+    sigma_arr = np.asarray(sigma, dtype=float).squeeze()
+
+    if np.any(sigma_arr < 0):
+        raise ValueError("sigma must be nonnegative")
+
+    # scalar mode
+    if mu_arr.ndim == 0 and sigma_arr.ndim == 0:
+        rng = np.random.default_rng(seed)
+        z = rng.normal(loc=float(mu_arr), scale=float(sigma_arr), size=int(n_samples))
+        th = expit(z)
+        return float(th.mean()), float(th.std(ddof=ddof))
+
+    # trajectory mode
+    mu_vec = np.ravel(mu_arr)
+    sigma_vec = np.ravel(sigma_arr)
+    if mu_vec.shape[0] != sigma_vec.shape[0]:
+        raise ValueError("mu and sigma must have the same length in trajectory mode")
+
+    T = mu_vec.shape[0]
+    means = np.empty(T, dtype=float)
+    stds = np.empty(T, dtype=float)
+
     rng = np.random.default_rng(seed)
-    z = rng.normal(loc=mu, scale=sigma, size=n_samples)
-    theta = expit(z)
-    return float(theta.mean()), float(theta.std(ddof=1))
+    n_samples = int(n_samples)
+    batch_size = max(1, int(batch_size))
+
+    for i in range(0, T, batch_size):
+        j = min(i + batch_size, T)
+        b = j - i
+        eps = rng.normal(size=(n_samples, b))
+        z = mu_vec[i:j][None, :] + sigma_vec[i:j][None, :] * eps
+        th = expit(z)
+        means[i:j] = th.mean(axis=0)
+        stds[i:j] = th.std(axis=0, ddof=ddof)
+
+    return means, stds
+
+# Optional: keep old names working
+def _logistic_normal_mean_std_mc(mu, sigma, n_samples=10_000, seed=0):
+    return logistic_moments(mu, sigma, n_samples=n_samples, seed=seed, ddof=1)
 
 def _trace_locscale_to_theta_moments(loc_trace, scale_trace, n_samples=10_000, seed=0):
-    loc_trace = np.asarray(loc_trace, dtype=float)
-    scale_trace = np.asarray(scale_trace, dtype=float)
-    out_mean = np.empty(loc_trace.shape[0], dtype=float)
-    out_std  = np.empty(loc_trace.shape[0], dtype=float)
-    for i in range(loc_trace.shape[0]):
-        out_mean[i], out_std[i] = _logistic_normal_mean_std_mc(
-            loc_trace[i], scale_trace[i], n_samples=n_samples, seed=seed
-        )
-    return out_mean, out_std
+    return logistic_moments(loc_trace, scale_trace, n_samples=n_samples, seed=seed, ddof=1)
+
+
+# def _logistic_normal_mean_std_mc(mu, sigma, n_samples=10_000, seed=0):
+#     mu = float(np.squeeze(mu))
+#     sigma = float(np.squeeze(sigma))
+#     rng = np.random.default_rng(seed)
+#     z = rng.normal(loc=mu, scale=sigma, size=n_samples)
+#     theta = expit(z)
+#     return float(theta.mean()), float(theta.std(ddof=1))
+
+# def _trace_locscale_to_theta_moments(loc_trace, scale_trace, n_samples=10_000, seed=0):
+#     loc_trace = np.asarray(loc_trace, dtype=float)
+#     scale_trace = np.asarray(scale_trace, dtype=float)
+#     out_mean = np.empty(loc_trace.shape[0], dtype=float)
+#     out_std  = np.empty(loc_trace.shape[0], dtype=float)
+#     for i in range(loc_trace.shape[0]):
+#         out_mean[i], out_std[i] = _logistic_normal_mean_std_mc(
+#             loc_trace[i], scale_trace[i], n_samples=n_samples, seed=seed
+#         )
+#     return out_mean, out_std
 
 # a function to apply the given push-forward transformation
 # then stack the trajectories for easier plotting

@@ -8,6 +8,11 @@ try:
 except ModuleNotFoundError:
     # PyMC not in this environment
     pass
+try:
+    from .tfp_rr_test import tfp_run_restart_1d
+except ModuleNotFoundError:
+    # TFP not in this environment
+    pass
 from .plot_rr import plot_a_few_trajectories_1d, plot_mean_band, plot_mean_band_rrs_1d
 from .utils import *
 from .distributions import *
