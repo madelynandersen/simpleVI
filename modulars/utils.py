@@ -25,6 +25,24 @@ def load_best_values(config=None, transform=None, n_samples=50_000, seed=1):
         return best_mu, best_std
 
 
+def check_int_or_float(x):
+    if isinstance(x, int) or isinstance(x, float):
+        return True
+    else:
+        return False
+    
+def check_all_int_or_float_or_1darrays(*args):
+    for arg in args:
+        if not (check_int_or_float(arg) or (isinstance(arg, np.ndarray) and arg.ndim == 1)):
+            return False
+    return True
+
+def check_all_covar_shaped_arrays(dim, *args):
+    for arg in args:
+        if not (isinstance(arg, np.ndarray) and arg.shape == (dim, dim)):
+            return False
+    return True
+
 
 """
 Helper functions for push-forward transforms
@@ -169,6 +187,35 @@ def apply_traj_transform(results, transform_fn=None, n_samples=50_000, seed=0, N
         multi_stds.append(multi_sigma)
     return stack_trajectories([single_means, single_stds, multi_means, multi_stds])
 
+def apply_traj_transform_multid(results, transform_fn=None, n_samples=50_000, seed=0, NOTEBOOK=True, TFP=False):
+    if NOTEBOOK:
+        wrapper = tqdm
+    else:
+        wrapper = standard_tqdm
+    single_means, single_stds = [], []
+    multi_means,  multi_stds  = [], []
+
+    if transform_fn is None:
+        transform_fn = lambda param1, param2, **kwargs: (param1, param2)
+    for single_loc_trace, single_scale_trace, multi_loc_trace, multi_scale_trace in wrapper(results):
+        if TFP:
+            # bc we're using lower triangular matrices in TFP
+            single_scale_trace = np.square(single_scale_trace)
+            multi_scale_trace = np.square(multi_scale_trace)
+        # Use vectorized transformation for speed
+        single_mu, single_sigma = transform_fn(
+            single_loc_trace, single_scale_trace, n_samples=n_samples, seed=seed
+        )
+        multi_mu, multi_sigma = transform_fn(
+            multi_loc_trace, multi_scale_trace, n_samples=n_samples, seed=seed
+        )
+        
+        single_means.append(single_mu)
+        single_stds.append(single_sigma)
+        multi_means.append(multi_mu)
+        multi_stds.append(multi_sigma)
+    return stack_trajectories_multid([single_means, single_stds, multi_means, multi_stds])
+
 
 """
 Helper functions to clean up arrays of trajectories
@@ -186,6 +233,22 @@ def stack_trajectories(trajectories):
         N, T = out_trajectories[0].shape[0], out_trajectories[0].shape[1]
         for i in range(len(out_trajectories)):
             out_trajectories[i] = out_trajectories[i].reshape(N, T)
+    return out_trajectories
+
+
+def stack_trajectories_multid(trajectories):
+    # assumes trajectories is a list of lists of arrays, where the inner arrays are shape (T, D) and the outer list is over runs
+    out_trajectories = []
+    for traj in trajectories:
+        out_trajectories.append(
+            np.stack(
+                traj, axis=0
+            )
+        )
+    if len(out_trajectories[0].shape) == 4:
+        N, T, D = out_trajectories[0].shape[0], out_trajectories[0].shape[1], out_trajectories[0].shape[2]
+        for i in range(len(out_trajectories)):
+            out_trajectories[i] = out_trajectories[i].reshape(N, T, D)
     return out_trajectories
 
 

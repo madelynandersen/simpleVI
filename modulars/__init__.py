@@ -1,5 +1,5 @@
 try:
-    from .numpyro_rr_test import run_restart_1d
+    from .numpyro_rr_test import run_restart_1d, run_restart_multid
 except ModuleNotFoundError:
     # NumPyro not in this environment
     pass

@@ -108,7 +108,7 @@ def plot_mean_band_rrs_1d(
     fig, axs = plt.subplots(2, 1, figsize=(12, 14))
     plot_mean_band(
         axs[0], x, traj_stds, best_std,
-        label_prefix + r'{} MC samples: $\sigma_p$ mean trajectory $\pm$ 1 SD across runs'.format(n_mc_samps),
+        label_prefix + '{} MC samples: '.format(n_mc_samps) + r'$\sigma_p$' + 'for ' + param_name + r' trajectory $\pm$ 1 SD across runs',
         r'$\sigma_p$'
     )
     axs[0].set_ylim(best_std * 0.6, best_std * 1.6)
@@ -117,7 +117,7 @@ def plot_mean_band_rrs_1d(
     
     plot_mean_band(
         axs[1], x, traj_means, best_mu,
-        label_prefix + r'{} MC samples: $\mu_p$ mean trajectory $\pm$ 1 SD across runs'.format(n_mc_samps),
+        label_prefix + '{} MC samples: '.format(n_mc_samps) + r'$\mu_p$' + 'for ' + param_name + r' trajectory $\pm$ 1 SD across runs',
         r'$\mu_p$'
     )
     axs[1].set_ylim(best_mu - 3 * best_std, best_mu + 3 * best_std)
@@ -130,3 +130,48 @@ def plot_mean_band_rrs_1d(
         axs[1].set_xlim(xlim)
     plt.tight_layout()
     plt.show()
+
+
+"""
+For multi-dimension plotting, we want the above plots for each of a few dimensions,
+so we can compare how the different packages are doing across dimensions
+Generally we can plot only the marginals if we're using the AutoDiagonalNormal (or similar)
+guide, since these are modeling as fully factorized across dimensions anyway
+
+If we're using AutoMultivariateNormal (or similar) guides, we may get a non-diagonal covariance
+matrix, so we can look beyond just the marginals. 
+
+However, we're really interested in how the posterior summary statistics are performing,
+so we can also look at other plots (like?)
+"""
+
+# translate the multi-dimension plotting code into the 1D plotting code per dimension
+def plot_some_dims_multid(
+        single_means, single_stds, multi_means, multi_stds,
+        best_mus, best_stds, param_name, dim,
+        which_dims=None, k=2, label_prefix = "", N = None): 
+    if which_dims is None:
+        np.random.seed(0)
+        which_dims = np.random.choice(dim, size=min(dim, k), replace=False)
+    for d in which_dims:
+        plot_a_few_trajectories_1d(
+            [single_means[:, :, d], single_stds[:, :, d]], [multi_means[:, :, d], multi_stds[:, :, d]],
+            best_mus[d], best_stds[d], param_name + "_dim" + str(d),
+            k=k, label_prefix=label_prefix, N=N
+        )
+        plot_mean_band_rrs_1d(
+            single_means[:, :, d], single_stds[:, :, d],
+            best_mus[d], best_stds[d], np.arange(single_means.shape[1]),
+            param_name + "_dim" + str(d), n_mc_samps=1, label_prefix=label_prefix
+        )
+        plot_mean_band_rrs_1d(
+            multi_means[:, :, d], multi_stds[:, :, d],
+            best_mus[d], best_stds[d], np.arange(single_means.shape[1]),  # x-axis is number of iterations
+            param_name + "_dim" + str(d), n_mc_samps=100, label_prefix=label_prefix
+        )
+
+
+# we need results to be stacked by restart_num, iter, dim, so single_mus[0,10,2]
+#  is the mean trajectory for the 3rd dimension of the 1st random restart
+
+    

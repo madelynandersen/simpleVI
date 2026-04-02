@@ -47,3 +47,48 @@ def tfp_run_restart_1d(seed,
         jit_compile=True
     )
     return *single_tracker, *multi_tracker
+
+def tfp_run_restart_multid(
+        seed, dim,
+        conditioned_log_prob_fn,
+        bijector=tfb.Identity(),
+        n_iters=100_000):
+
+    single_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+            event_shape=[dim],
+            dtype=tf.float32
+        )
+    multi_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+            event_shape=[dim],
+            dtype=tf.float32
+        )
+
+
+    def single_trace_fn(traceable_quantities):
+        return single_q_z.distribution.loc, single_q_z.distribution.scale
+    def multi_trace_fn(traceable_quantities):
+        return multi_q_z.distribution.loc, multi_q_z.distribution.scale
+            
+    single_losses = tfp.vi.fit_surrogate_posterior(
+        conditioned_log_prob_fn,
+        surrogate_posterior=single_q_z,
+        optimizer=tf.optimizers.Adam(),
+        trace_fn=single_trace_fn,
+        num_steps=n_iters,
+        jit_compile=True,
+        seed=seed
+    )
+    multi_losses = tfp.vi.fit_surrogate_posterior(
+        conditioned_log_prob_fn,
+        surrogate_posterior=multi_q_z,
+        optimizer=tf.optimizers.Adam(),
+        trace_fn=multi_trace_fn,
+        num_steps=n_iters,
+        jit_compile=True,
+        sample_size=100,
+        seed=seed+1000
+    )
+
+    return *single_losses, *multi_losses
+
+                           
