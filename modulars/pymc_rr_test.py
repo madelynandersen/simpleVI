@@ -18,7 +18,7 @@ be created externally and passed in as an argument,
 so that we can run the same model with different random restarts
 """
 
-def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', seed=0, **kwargs):
+def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', seed=0, SINGLE_DIM=True, **kwargs):
     """
     Run pymc VI with the given model and return the mean and std trajectories
 
@@ -27,10 +27,16 @@ def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', see
     np.random.seed(seed)
     advi = pm.ADVI(random_seed=seed)
 
-    tracker = pm.callbacks.Tracker(
-        mean=advi.approx.mean.eval,
-        std=advi.approx.std.eval,
-    )
+    if SINGLE_DIM:
+        tracker = pm.callbacks.Tracker(
+            mean=advi.approx.mean.eval,
+            std=advi.approx.std.eval,
+        )
+    else:
+        tracker = pm.callbacks.Tracker(
+            mean=advi.approx.mean.eval,
+            cov=advi.approx.cov.eval,
+        )
 
     if optimizer == 'default':
             approx = advi.fit(
@@ -45,7 +51,10 @@ def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', see
             obj_n_mc=n_mc_samples,
             obj_optimizer=pm.adam()
         )
-    return tracker['mean'], tracker['std']
+    if SINGLE_DIM:
+        return tracker['mean'], tracker['std']
+    else:
+        return tracker['mean'], tracker['cov']
 
 # runs regular and ADAM VI for a given model and given seed and returns trajectory
 def run_single_seed_pymc_VI(seed, run_model_fn):
@@ -55,5 +64,3 @@ def run_single_seed_pymc_VI(seed, run_model_fn):
      adam_single_means, adam_single_stds = run_model_fn(n_mc_samples=1, seed=seed, optimizer='adam')
      adam_multi_means, adam_multi_stds = run_model_fn(n_mc_samples=100, seed=seed+1000, optimizer='adam')
      return [single_means, single_stds, multi_means, multi_stds], [adam_single_means, adam_single_stds, adam_multi_means, adam_multi_stds]
-
-     

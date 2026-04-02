@@ -187,7 +187,9 @@ def apply_traj_transform(results, transform_fn=None, n_samples=50_000, seed=0, N
         multi_stds.append(multi_sigma)
     return stack_trajectories([single_means, single_stds, multi_means, multi_stds])
 
-def apply_traj_transform_multid(results, transform_fn=None, n_samples=50_000, seed=0, NOTEBOOK=True, TFP=False):
+def apply_traj_transform_multid(results, transform_fn=None, n_samples=50_000, seed=0, NOTEBOOK=True, TFP=False, PYMC=False):
+    # if using TFP, we need to square the scale traces to get the variances, since we're using the lower triangular parameterization of the covariance matrix
+    # if using PyMC, we need to take the diagonal of the covariance matrix to get the variances, since PyMC's ADVI returns a full covariance matrix even for the diagonal guide
     if NOTEBOOK:
         wrapper = tqdm
     else:
@@ -202,6 +204,10 @@ def apply_traj_transform_multid(results, transform_fn=None, n_samples=50_000, se
             # bc we're using lower triangular matrices in TFP
             single_scale_trace = np.square(single_scale_trace)
             multi_scale_trace = np.square(multi_scale_trace)
+        if PYMC:
+            # bc we're using the diagonal of the covariance matrix in PyMC
+            single_scale_trace = np.diagonal(single_scale_trace, axis1=-2, axis2=-1)
+            multi_scale_trace = np.diagonal(multi_scale_trace, axis1=-2, axis2=-1)
         # Use vectorized transformation for speed
         single_mu, single_sigma = transform_fn(
             single_loc_trace, single_scale_trace, n_samples=n_samples, seed=seed
