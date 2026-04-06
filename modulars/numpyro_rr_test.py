@@ -49,8 +49,8 @@ def run_restart_multid(seed, model, data, param_name, n_iters, dim, n_particles 
             return final_elbo, final_tracker
         return run_single_svi_loop(rng_key, y_data)
 
-    single_elbo, single_tracker = run_svi(jax.random.PRNGKey(0), y_data, single_svi)
-    multi_elbo, multi_tracker = run_svi(jax.random.PRNGKey(10), y_data, multi_svi)
+    single_elbo, single_tracker = run_svi(jax.random.PRNGKey(seed), y_data, single_svi)
+    multi_elbo, multi_tracker = run_svi(jax.random.PRNGKey(seed+1000), y_data, multi_svi)
     return single_tracker['mu_loc'], single_tracker['std_loc'], multi_tracker['mu_loc'], multi_tracker['std_loc']
 
 
