@@ -1,14 +1,12 @@
-import json
-import os
-import matplotlib.pyplot as plt
 import numpy as np
-from tqdm.notebook import tqdm
-from tqdm import tqdm as standard_tqdm
-
 import pymc as pm
 import pytensor.tensor as pt
 import pytensor
 pytensor.config.cxx = '/usr/bin/clang++'
+
+
+from pymc.logprob.transforms import Transform
+
 
 
 """
@@ -25,7 +23,7 @@ def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', see
     optimizer can be 'default' (pymc's default) or 'adam' (pymc's adam)
     """
     np.random.seed(seed)
-    advi = pm.ADVI(random_seed=seed)
+    advi = pm.ADVI(model=model, random_seed=seed)
 
     if SINGLE_DIM:
         tracker = pm.callbacks.Tracker(
@@ -57,10 +55,112 @@ def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', see
         return tracker['mean'], tracker['cov']
 
 # runs regular and ADAM VI for a given model and given seed and returns trajectory
-def run_single_seed_pymc_VI(seed, run_model_fn):
-     np.random.seed(seed)
-     single_means, single_stds = run_model_fn(n_mc_samples=1, seed=seed, optimizer='default')
-     multi_means, multi_stds = run_model_fn(n_mc_samples=100, seed=seed+1000, optimizer='default')
-     adam_single_means, adam_single_stds = run_model_fn(n_mc_samples=1, seed=seed, optimizer='adam')
-     adam_multi_means, adam_multi_stds = run_model_fn(n_mc_samples=100, seed=seed+1000, optimizer='adam')
-     return [single_means, single_stds, multi_means, multi_stds], [adam_single_means, adam_single_stds, adam_multi_means, adam_multi_stds]
+def run_single_seed_pymc_VI(seed, run_model_fn, **run_model_kwargs):
+    np.random.seed(seed)
+    single_means, single_stds = run_model_fn(
+        n_mc_samples=1, seed=seed, optimizer='default', **run_model_kwargs
+    )
+    multi_means, multi_stds = run_model_fn(
+        n_mc_samples=100, seed=seed + 1000, optimizer='default', **run_model_kwargs
+    )
+    adam_single_means, adam_single_stds = run_model_fn(
+        n_mc_samples=1, seed=seed, optimizer='adam', **run_model_kwargs
+    )
+    adam_multi_means, adam_multi_stds = run_model_fn(
+        n_mc_samples=100, seed=seed + 1000, optimizer='adam', **run_model_kwargs
+    )
+    return (
+        [single_means, single_stds, multi_means, multi_stds],
+        [adam_single_means, adam_single_stds, adam_multi_means, adam_multi_stds],
+    )
+
+
+
+"""
+The following helpers are for changing the simplex transform of pymc
+to be the same stick-breaking transform used by TFP and NumPyro, so we can
+understand whether differences in the transforms are driving differences in the results.
+"""
+# change_value_transforms allows us to change the transformation being used by pymc
+
+
+class StickBreakingSimplexTransform(Transform):
+    """
+    we replace PyMC's default simplex value transform with the centered
+    stick-breaking transform used by NumPyro / TFP.
+    """
+
+    name = "stickbreaking_simplex"
+
+    def forward(self, value, *inputs):
+        """
+        we map simplex coordinates to unconstrained stick-breaking coordinates.
+        """
+        y = value
+        y_main = y[..., :-1]
+
+        prev_sum = pt.concatenate(
+            [
+                pt.zeros_like(y_main[..., :1]),
+                pt.cumsum(y_main, axis=-1)[..., :-1],
+            ],
+            axis=-1,
+        )
+
+        z = pt.clip(
+            y_main / (1.0 - prev_sum),
+            1e-12,
+            1.0 - 1e-12,
+        )
+
+        latent_dim = y.shape[-1] - 1
+        offset = pt.log(pt.arange(latent_dim, 0, -1)).astype(y.dtype)
+
+        return pt.log(z) - pt.log1p(-z) + offset
+
+    def backward(self, value, *inputs):
+        """
+        we map unconstrained stick-breaking coordinates back to the simplex.
+        """
+        x = value
+
+        latent_dim = x.shape[-1]
+        offset = pt.log(pt.arange(latent_dim, 0, -1)).astype(x.dtype)
+        x_shifted = x - offset
+
+        z = pt.sigmoid(x_shifted)
+
+        stick_segments = pt.concatenate(
+            [
+                pt.ones_like(z[..., :1]),
+                pt.extra_ops.cumprod(1.0 - z, axis=-1),
+            ],
+            axis=-1,
+        )
+
+        z_padded = pt.concatenate(
+            [
+                z,
+                pt.ones_like(z[..., :1]),
+            ],
+            axis=-1,
+        )
+
+        return z_padded * stick_segments
+
+    def log_jac_det(self, value, *inputs):
+        """
+        we compute the unconstrained-to-simplex log absolute Jacobian determinant.
+        """
+        x = value
+        y = self.backward(x, *inputs)
+
+        latent_dim = x.shape[-1]
+        offset = pt.log(pt.arange(latent_dim, 0, -1)).astype(x.dtype)
+        x_shifted = x - offset
+
+        return pt.sum(
+            pt.log(y[..., :-1]) + pt.log(pt.sigmoid(x_shifted)) - x_shifted,
+            axis=-1,
+        )
+

@@ -122,3 +122,44 @@ def poisson(n_samples, lambda_like=2.0, seed=20):
     np.random.seed(seed)
     data = np.random.poisson(lambda_like, n_samples)
     return data
+
+
+def gen_multinomial_data_shared(theta_like, N, total_count=50, SEED=20):
+    np.random.seed(SEED)
+    """
+    Generate multinomial data with a fixed theta vector across N rows
+    where each row has a total count of `total_count`.
+    """
+    assert np.isclose(theta_like.sum(), 1.0), "Theta vector must sum to 1"
+    if N == 0 or total_count == 0: return []
+    n_vec = np.full(N, int(total_count), dtype=int)
+    counts = np.vstack([np.random.multinomial(n_i, theta_like) for n_i in n_vec])
+    return counts
+"""
+from https://gregorygundersen.com/blog/2020/12/24/dirichlet-multinomial/:
+X = {x_1, ..., x_N} are distributed multinomial w Dirichlet prior
+x_i ~ Multinomial(M, theta) where theta = {theta_1, ..., theta_N} with sum_i theta_i = 1
+and sum x_i = M
+and the theta vector has a Dirichlet prior
+theta ~ Dirichlet(alpha) where alpha = {alpha_1, ..., alpha_N} with alpha_i > 0
+
+with posterior
+p(theta| X) = Dirichlet(X | alpha_N)
+where alpha_N = {alpha_1 + sum_i x_i1, ..., alpha_N + sum_i x_iN}
+- each term is the prior count + observed counts for that category across observations
+"""
+def lda_posterior_shared_theta(observations, alpha, *args, **kwargs):
+    # example: every forest has the same proportions over tree species
+    # Compute the sufficient statistics
+    x_i = np.sum(observations, axis=0)
+    alpha_N = alpha + x_i
+    posterior_mean = alpha_N / np.sum(alpha_N)
+    posterior_std = np.sqrt(
+        posterior_mean * (1 - posterior_mean) / (np.sum(alpha_N) + 1))
+    # we need to return the posterior mean, std and the dirichlet parameters
+    results = {
+        'mean_post': posterior_mean,
+        'std_post': posterior_std,
+        'alpha_post': alpha_N
+    }
+    return results
