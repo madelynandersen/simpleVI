@@ -1,7 +1,8 @@
+import numpy as np
 import jax
 import jax.numpy as jnp
 from numpyro.infer import SVI, Trace_ELBO
-from numpyro.infer.autoguide import AutoNormal, AutoDiagonalNormal
+from numpyro.infer.autoguide import AutoNormal, AutoDiagonalNormal, AutoMultivariateNormal
 from numpyro.optim import Adam
 import matplotlib.pyplot as plt
 
@@ -20,6 +21,7 @@ def _run_restart_numpyro(
         param_getter,
         n_iters,
         tracker_shape,
+        tracker_shapes=None,
         tracker_params = ('mu_loc', 'std_loc'),
         n_particles=100,
         step_size=5e-4,
@@ -36,9 +38,14 @@ def _run_restart_numpyro(
         def run_loop(rng_key, *args):
             svi_state = svi_model.init(rng_key, *args)
 
+            if tracker_shapes is None:
+                local_tracker_shapes = (tracker_shape,) * len(tracker_params)
+            else:
+                local_tracker_shapes = tracker_shapes
+
             tracker = {
-                param: jnp.zeros((n_iters,) + tracker_shape)
-                for param in tracker_params
+                param: jnp.zeros((n_iters,) + shape)
+                for param, shape in zip(tracker_params, local_tracker_shapes)
             }
 
             def body_fn(i, val):
@@ -89,6 +96,68 @@ def run_restart_multid(
         data=data,
         model_args=model_args,
     )
+
+
+def run_restart_multid_fullrank(
+        seed,
+        model,
+        data,
+        param_name,
+        n_iters,
+        dim,
+        n_particles=100,
+        model_args=None,
+        step_size=5e-4):
+    del param_name
+    return _run_restart_numpyro(
+        seed=seed,
+        model=model,
+        guide=AutoMultivariateNormal,
+        param_getter=lambda params: (
+            params["auto_loc"],
+            jnp.sqrt(jnp.sum(jnp.square(params["auto_scale_tril"]), axis=-1)),
+        ),
+        n_iters=n_iters,
+        tracker_shape=(dim,),
+        tracker_params=("mu_loc", "std_loc"),
+        n_particles=n_particles,
+        step_size=step_size,
+        data=data,
+        model_args=model_args,
+    )
+
+
+def fit_multid_fullrank_covariance(
+        seed,
+        model,
+        data,
+        n_iters,
+        dim,
+        n_particles=100,
+        model_args=None,
+        step_size=5e-4):
+    del dim
+    optimizer = Adam(step_size=step_size)
+    args = _prepare_model_args(data=data, model_args=model_args)
+
+    guide = AutoMultivariateNormal(model)
+    svi = SVI(model, guide, optimizer, loss=Trace_ELBO(num_particles=n_particles))
+    svi_state = svi.init(jax.random.PRNGKey(seed), *args)
+
+    @jax.jit
+    def run_loop(svi_state, *args):
+        def body_fn(_, state):
+            state, _ = svi.update(state, *args)
+            return state
+
+        return jax.lax.fori_loop(0, n_iters, body_fn, svi_state)
+
+    svi_state = run_loop(svi_state, *args)
+    params = svi.get_params(svi_state)
+    loc = params["auto_loc"]
+    scale_tril = params["auto_scale_tril"]
+    covariance = scale_tril @ scale_tril.T
+    return np.asarray(loc), np.asarray(covariance)
 
 def run_restart_1d(
         seed,

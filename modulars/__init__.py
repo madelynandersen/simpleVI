@@ -1,10 +1,10 @@
 try:
-    from .numpyro_rr_test import run_restart_1d, run_restart_multid
+    from .numpyro_rr_test import run_restart_1d, run_restart_multid, run_restart_multid_fullrank
 except ModuleNotFoundError:
     # NumPyro not in this environment
     pass
 try:
-    from .pymc_rr_test import run_pymc_VI, run_single_seed_pymc_VI
+    from .pymc_rr_test import run_pymc_VI, run_single_seed_pymc_VI, run_pymc_fullrank_VI, run_single_seed_pymc_fullrank_VI
 except ModuleNotFoundError:
     # PyMC not in this environment
     pass

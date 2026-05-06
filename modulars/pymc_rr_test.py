@@ -54,6 +54,50 @@ def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', see
     else:
         return tracker['mean'], tracker['cov']
 
+
+def run_pymc_fullrank_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', seed=0, SINGLE_DIM=False, **kwargs):
+    """
+    Run PyMC full-rank ADVI and return the mean and covariance trajectories.
+    """
+    del SINGLE_DIM, kwargs
+    np.random.seed(seed)
+    advi = pm.FullRankADVI(model=model, random_seed=seed)
+
+    tracker = pm.callbacks.Tracker(
+        mean=advi.approx.mean.eval,
+        cov=advi.approx.cov.eval,
+    )
+
+    if optimizer == 'default':
+        advi.fit(
+            n_iters, callbacks=[tracker],
+            progressbar=False,
+            obj_n_mc=n_mc_samples
+        )
+    else:
+        advi.fit(
+            n_iters, callbacks=[tracker],
+            progressbar=False,
+            obj_n_mc=n_mc_samples,
+            obj_optimizer=pm.adam()
+        )
+
+    return tracker['mean'], tracker['cov']
+
+
+def fit_pymc_fullrank_covariance(model, n_mc_samples=100, n_iters=100_000, optimizer='default', seed=0):
+    """
+    Fit a single full-rank ADVI run and return the final mean and covariance.
+    """
+    mean_traj, cov_traj = run_pymc_fullrank_VI(
+        model,
+        n_mc_samples=n_mc_samples,
+        n_iters=n_iters,
+        optimizer=optimizer,
+        seed=seed,
+    )
+    return np.asarray(mean_traj)[-1], np.asarray(cov_traj)[-1]
+
 # runs regular and ADAM VI for a given model and given seed and returns trajectory
 def run_single_seed_pymc_VI(seed, run_model_fn, **run_model_kwargs):
     np.random.seed(seed)
@@ -72,6 +116,26 @@ def run_single_seed_pymc_VI(seed, run_model_fn, **run_model_kwargs):
     return (
         [single_means, single_stds, multi_means, multi_stds],
         [adam_single_means, adam_single_stds, adam_multi_means, adam_multi_stds],
+    )
+
+
+def run_single_seed_pymc_fullrank_VI(seed, run_model_fn, **run_model_kwargs):
+    np.random.seed(seed)
+    single_means, single_covs = run_model_fn(
+        n_mc_samples=1, seed=seed, optimizer='default', **run_model_kwargs
+    )
+    multi_means, multi_covs = run_model_fn(
+        n_mc_samples=100, seed=seed + 1000, optimizer='default', **run_model_kwargs
+    )
+    adam_single_means, adam_single_covs = run_model_fn(
+        n_mc_samples=1, seed=seed, optimizer='adam', **run_model_kwargs
+    )
+    adam_multi_means, adam_multi_covs = run_model_fn(
+        n_mc_samples=100, seed=seed + 1000, optimizer='adam', **run_model_kwargs
+    )
+    return (
+        [single_means, single_covs, multi_means, multi_covs],
+        [adam_single_means, adam_single_covs, adam_multi_means, adam_multi_covs],
     )
 
 
@@ -163,4 +227,3 @@ class StickBreakingSimplexTransform(Transform):
             pt.log(y[..., :-1]) + pt.log(pt.sigmoid(x_shifted)) - x_shifted,
             axis=-1,
         )
-
