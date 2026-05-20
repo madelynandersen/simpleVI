@@ -1,0 +1,3 @@
+source,model,parameter,summary,value,notes
+PyMC latest example gallery,varying intercept,beta,mean,-0.664,Exact reported summary from PyMC's current varying-intercept model.
+PyMC latest example gallery,varying intercept,beta,sd,0.069,Exact reported summary from PyMC's current varying-intercept model.

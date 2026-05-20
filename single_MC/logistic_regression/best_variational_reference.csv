@@ -1,0 +1,5 @@
+parameter,mean,sd,method,source_file,restart_idx,mc_setting,best_elbo_np
+Intercept,-0.2145192176103592,0.21913427114486694,numpyro,/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/logistic_regression/results/numpyro_processed_restarts.csv,8,100_mc,-66.48063659667969
+x1,0.6894152164459229,0.14012646675109863,numpyro,/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/logistic_regression/results/numpyro_processed_restarts.csv,8,100_mc,-66.48063659667969
+x2,-0.6626499891281128,0.17299680411815643,numpyro,/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/logistic_regression/results/numpyro_processed_restarts.csv,8,100_mc,-66.48063659667969
+x1:x2,1.6833827495574951,0.19285087287425995,numpyro,/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/logistic_regression/results/numpyro_processed_restarts.csv,8,100_mc,-66.48063659667969

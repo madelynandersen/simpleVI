@@ -1,0 +1,90 @@
+parameter,mean,sd,source,model,scale,best_package,best_setting,best_restart_idx,selection_score
+mu_a,1.4921311140060425,0.0348968543112278,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+sigma_a_log__,-1.128519058227539,0.07703481614589691,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[AITKIN],1.222760558128357,0.24140632152557373,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[ANOKA],0.9779698252677917,0.0961950346827507,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[BECKER],1.5091545581817627,0.2554871439933777,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[BELTRAMI],1.5386872291564941,0.208512082695961,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[BENTON],1.4681025743484497,0.24114757776260376,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[BIG STONE],1.5115511417388916,0.2552424967288971,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[BLUE EARTH],1.878402829170227,0.16663101315498352,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[BROWN],1.7102503776550293,0.24073241651058197,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CARLTON],1.1913267374038696,0.18620459735393524,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CARVER],1.5210949182510376,0.21833792328834534,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CASS],1.4623761177062988,0.22888414561748505,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CHIPPEWA],1.6090176105499268,0.2414969950914383,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CHISAGO],1.2671773433685303,0.21798075735569,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CLAY],1.8643943071365356,0.16647538542747498,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CLEARWATER],1.433393955230713,0.24079369008541107,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[COOK],1.2753546237945557,0.27307721972465515,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[COTTONWOOD],1.3844709396362305,0.2405768632888794,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[CROW WING],1.256369948387146,0.1758919358253479,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[DAKOTA],1.3772618770599365,0.08818352222442627,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[DODGE],1.6127593517303467,0.25593507289886475,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[DOUGLAS],1.6542720794677734,0.19425703585147858,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[FARIBAULT],1.104549765586853,0.21922971308231354,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[FILLMORE],1.4675848484039307,0.27262043952941895,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[FREEBORN],1.8830406665802002,0.1936936229467392,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[GOODHUE],1.837829828262329,0.16611260175704956,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[HENNEPIN],1.3954654932022095,0.06933879107236862,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[HOUSTON],1.6481363773345947,0.2191203236579895,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[HUBBARD],1.3806363344192505,0.22890430688858032,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[ISANTI],1.343686819076538,0.25552332401275635,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[ITASCA],1.135504126548767,0.18058116734027863,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[JACKSON],1.7621454000473022,0.2293609082698822,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[KANABEC],1.3984466791152954,0.24162131547927856,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[KANDIYOHI],1.7497763633728027,0.24077768623828888,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[KITTSON],1.5293678045272827,0.2560468316078186,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[KOOCHICHING],1.1237553358078003,0.20869792997837067,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[LAC QUI PARLE],1.9015858173370361,0.2744300663471222,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[LAKE],0.8470617532730103,0.19317297637462616,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[LAKE OF THE WOODS],1.6572704315185547,0.24221137166023254,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[LE SUEUR],1.627097487449646,0.22809632122516632,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[LINCOLN],1.858012080192566,0.2395562082529068,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[LYON],1.7913776636123657,0.20115786790847778,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MAHNOMEN],1.4754059314727783,0.29528194665908813,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MARSHALL],1.5776681900024414,0.19281253218650818,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MARTIN],1.2658289670944214,0.20839661359786987,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MCLEOD],1.359295129776001,0.1699826866388321,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MEEKER],1.370107889175415,0.22901512682437897,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MILLE LACS],1.3414969444274902,0.27314502000808716,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MORRISON],1.2921333312988281,0.1934012770652771,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MOWER],1.6612478494644165,0.17069844901561737,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[MURRAY],1.6531614065170288,0.29415401816368103,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[NICOLLET],1.7937120199203491,0.23936283588409424,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[NOBLES],1.6590876579284668,0.2557312846183777,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[NORMAN],1.4146292209625244,0.25544822216033936,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[OLMSTED],1.3639140129089355,0.13650967180728912,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[OTTER TAIL],1.5760977268218994,0.20121455192565918,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[PENNINGTON],1.3762571811676025,0.25414857268333435,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[PINE],1.1225312948226929,0.21852487325668335,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[PIPESTONE],1.6637589931488037,0.24034951627254486,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[POLK],1.599139928817749,0.24149300158023834,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[POPE],1.4389482736587524,0.27275535464286804,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[RAMSEY],1.2337353229522705,0.11944182217121124,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[REDWOOD],1.7406702041625977,0.2290867418050766,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[RENVILLE],1.5626945495605469,0.25505098700523376,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[RICE],1.7438442707061768,0.1805141568183899,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[ROCK],1.4485870599746704,0.2728767991065979,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[ROSEAU],1.6217936277389526,0.16642218828201294,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[SCOTT],1.7271019220352173,0.17043180763721466,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[SHERBURNE],1.2669196128845215,0.20105236768722534,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[SIBLEY],1.3985263109207153,0.2408917248249054,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[ST LOUIS],0.9417117834091187,0.06560023874044418,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[STEARNS],1.5113898515701294,0.13237611949443817,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[STEELE],1.5656198263168335,0.18733276426792145,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[STEVENS],1.5870779752731323,0.2727810740470886,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[SWIFT],1.2899030447006226,0.24105589091777802,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[TODD],1.579048752784729,0.25478672981262207,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[TRAVERSE],1.7216488122940063,0.2397489696741104,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WABASHA],1.69450044631958,0.2087228149175644,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WADENA],1.4024354219436646,0.22936493158340454,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WASECA],1.1484779119491577,0.24085436761379242,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WASHINGTON],1.3737603425979614,0.1012435108423233,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WATONWAN],1.9360295534133911,0.2540915310382843,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WILKIN],1.6193641424179077,0.2948431372642517,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WINONA],1.6048259735107422,0.17073006927967072,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[WRIGHT],1.6137628555297852,0.17096860706806183,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+alpha[YELLOW MEDICINE],1.4168559312820435,0.2729818522930145,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+beta,-0.6649174094200134,0.05843081325292587,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375
+sd_y_log__,-0.3208732604980469,0.023311898112297058,Saved VI NumPyro-ELBO best (pymc default_100_mc restart 0),pymc_tutorial,unconstrained_for_positive_scales,pymc,default_100_mc,0,-1062.56787109375

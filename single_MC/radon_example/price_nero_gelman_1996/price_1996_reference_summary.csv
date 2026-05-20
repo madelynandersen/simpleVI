@@ -1,0 +1,4 @@
+source,model,parameter,summary,value,notes
+"Price, Nero, and Gelman (1996)",county geometric-mean random effects,mu,mean,4.95,"Reported posterior mean for the distribution of county log geometric means, in log(Bq/m^3)."
+"Price, Nero, and Gelman (1996)",county geometric-mean random effects,kappa_sq,mean,0.57,Reported posterior mean for within-county log-radon variance.
+"Price, Nero, and Gelman (1996)",county geometric-mean random effects,sigma_sq,mean,0.097,Reported posterior mean for between-county log geometric-mean variance.

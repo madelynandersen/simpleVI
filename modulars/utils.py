@@ -451,63 +451,207 @@ def find_best_params(
         true_concentration_scale=None,
         model_str="multidirich",
         guide_str="stickbreak_mvn",
-        param_name="theta"):
+        param_name="theta",
+        score_fn=None,
+        result_specs=None,
+        processed_mc_settings=None,
+        score_seed_by_restart=True):
     """
-    we load every saved run from every file, score each one with compute_elbo,
-    and return the best mean / cov along with metadata.
+    we load every saved run from every file, score each one with compute_elbo
+    or a caller-provided score_fn, and return the best mean / cov along with
+    metadata. With a custom score_fn, this also understands the compact
+    final-summary payload shape (final_means, final_stds) and the processed
+    restart payload shape (single_means, single_stds, multi_means, multi_stds).
     """
     from modulars.elbo_computations import compute_elbo
 
-    alpha_prior = np.asarray(alpha_prior, dtype=float)
-    obs_counts = np.asarray(obs_counts)
+    if alpha_prior is not None:
+        alpha_prior = np.asarray(alpha_prior, dtype=float)
+    if score_fn is None:
+        obs_counts = np.asarray(obs_counts)
 
-    if true_concentration_scale is None:
+    if true_concentration_scale is None and alpha_prior is not None:
         true_concentration_scale = float(np.sum(alpha_prior) + np.sum(obs_counts))
 
     all_scored_runs = []
 
-    for file_name in file_name_list:
+    if result_specs is None:
+        result_specs = [(None, file_name) for file_name in file_name_list]
+    if processed_mc_settings is not None:
+        processed_mc_settings = set(processed_mc_settings)
+
+    for method, file_name in result_specs:
         loaded_runs = load_from_csv(file_name)
 
-        for local_restart_idx, run in enumerate(loaded_runs):
-            extracted = _extract_mean_cov_result(run)
+        final_summary_payload = (
+            score_fn is not None
+            and len(loaded_runs) == 1
+            and isinstance(loaded_runs[0], (tuple, list))
+            and len(loaded_runs[0]) == 2
+            and not (
+                isinstance(loaded_runs[0][1], dict)
+                and "mean" in loaded_runs[0][1]
+                and "cov" in loaded_runs[0][1]
+            )
+        )
+        processed_restart_payload = (
+            score_fn is not None
+            and len(loaded_runs) == 1
+            and isinstance(loaded_runs[0], (tuple, list))
+            and len(loaded_runs[0]) == 4
+        )
 
-            mean = np.asarray(extracted["mean"], dtype=float)
-            cov = np.asarray(extracted["cov"], dtype=float)
-            estimated_alpha = mean * true_concentration_scale
+        if final_summary_payload:
+            final_means, final_stds = loaded_runs[0]
+            final_means = np.asarray(final_means, dtype=float)
+            final_stds = np.asarray(final_stds, dtype=float)
+            if final_means.ndim == 1:
+                final_means = final_means[None, :]
+                final_stds = final_stds[None, :]
+            if final_means.shape != final_stds.shape:
+                raise ValueError(
+                    f"final mean/std shape mismatch in {file_name}: "
+                    f"{final_means.shape} vs {final_stds.shape}"
+                )
 
-            numpyro_elbo = compute_elbo(
-                model_str=model_str,
-                guide_str=guide_str,
-                param_name=param_name,
-                model_vals=[alpha_prior, np.sum(obs_counts)],
-                guide_vals=[mean, cov],
-                data=obs_counts,
-                with_data=True,
-                grad_samps=grad_samps,
-                seed=seed,
+            run_iter = []
+            for local_restart_idx in range(final_means.shape[0]):
+                mean = np.asarray(final_means[local_restart_idx, :], dtype=float)
+                std = np.asarray(final_stds[local_restart_idx, :], dtype=float)
+                run_iter.append(
+                    {
+                        "restart_idx": local_restart_idx,
+                        "mc_setting": None,
+                        "mean": mean,
+                        "cov": np.diag(np.square(std)),
+                        "std": std,
+                        "final_elbo": None,
+                        "n_records": 1,
+                        "raw": {
+                            "mean": mean,
+                            "std": std,
+                            "source_kind": "final_summary",
+                        },
+                    }
+                )
+        elif processed_restart_payload:
+            single_means, single_stds, multi_means, multi_stds = loaded_runs[0]
+            run_iter = []
+            for mc_setting, means, stds in (
+                ("1_mc", single_means, single_stds),
+                ("100_mc", multi_means, multi_stds),
+            ):
+                if processed_mc_settings is not None and mc_setting not in processed_mc_settings:
+                    continue
+                means = np.asarray(means, dtype=float)
+                stds = np.asarray(stds, dtype=float)
+                for local_restart_idx in range(means.shape[0]):
+                    mean = np.asarray(means[local_restart_idx, -1, :], dtype=float)
+                    std = np.asarray(stds[local_restart_idx, -1, :], dtype=float)
+                    run_iter.append(
+                        {
+                            "restart_idx": local_restart_idx,
+                            "mc_setting": mc_setting,
+                            "mean": mean,
+                            "cov": np.diag(np.square(std)),
+                            "std": std,
+                            "final_elbo": None,
+                            "n_records": int(means.shape[1]),
+                            "raw": {
+                                "mean": mean,
+                                "std": std,
+                                "mc_setting": mc_setting,
+                                "source_kind": "processed_restart_trace",
+                            },
+                        }
+                    )
+        else:
+            run_iter = []
+            for local_restart_idx, run in enumerate(loaded_runs):
+                extracted = _extract_mean_cov_result(run)
+                cov = np.asarray(extracted["cov"], dtype=float)
+                run_iter.append(
+                    {
+                        "restart_idx": local_restart_idx,
+                        "mc_setting": None,
+                        "mean": np.asarray(extracted["mean"], dtype=float),
+                        "cov": cov,
+                        "std": np.sqrt(np.clip(np.diag(cov), 0.0, None)),
+                        "final_elbo": extracted["final_elbo"],
+                        "n_records": None,
+                        "raw": extracted["raw"],
+                    }
+                )
+
+        for candidate in run_iter:
+            local_restart_idx = candidate["restart_idx"]
+
+            mean = np.asarray(candidate["mean"], dtype=float)
+            cov = np.asarray(candidate["cov"], dtype=float)
+            std = np.asarray(candidate["std"], dtype=float)
+            estimated_alpha = (
+                mean * true_concentration_scale
+                if true_concentration_scale is not None
+                else None
             )
 
-            all_scored_runs.append(
-                {
-                    "source_file": file_name,
-                    "restart_idx": local_restart_idx,
-                    "mean": mean,
-                    "cov": cov,
-                    "std": np.sqrt(np.clip(np.diag(cov), 0.0, None)),
-                    "estimated_alpha": estimated_alpha,
-                    "best_elbo_np": float(numpyro_elbo),
-                    "final_elbo": extracted["final_elbo"],
-                    "raw": extracted["raw"],
-                }
-            )
+            if score_fn is None:
+                numpyro_elbo = compute_elbo(
+                    model_str=model_str,
+                    guide_str=guide_str,
+                    param_name=param_name,
+                    model_vals=[alpha_prior, np.sum(obs_counts)],
+                    guide_vals=[mean, cov],
+                    data=obs_counts,
+                    with_data=True,
+                    grad_samps=grad_samps,
+                    seed=seed,
+                )
+            else:
+                score_seed = seed + local_restart_idx if score_seed_by_restart else seed
+                numpyro_elbo = score_fn(
+                    mean=mean,
+                    cov=cov,
+                    std=std,
+                    data=obs_counts,
+                    grad_samps=grad_samps,
+                    seed=score_seed,
+                    source_file=file_name,
+                    restart_idx=local_restart_idx,
+                    method=method,
+                    mc_setting=candidate["mc_setting"],
+                    n_records=candidate["n_records"],
+                )
+
+            scored_run = {
+                "source_file": file_name,
+                "restart_idx": local_restart_idx,
+                "mean": mean,
+                "cov": cov,
+                "std": std,
+                "estimated_alpha": estimated_alpha,
+                "best_elbo_np": float(numpyro_elbo),
+                "final_elbo": candidate["final_elbo"],
+                "n_records": candidate["n_records"],
+                "raw": candidate["raw"],
+            }
+            if method is not None:
+                scored_run["method"] = method
+            if candidate["mc_setting"] is not None:
+                scored_run["mc_setting"] = candidate["mc_setting"]
+            all_scored_runs.append(scored_run)
 
     if len(all_scored_runs) == 0:
         raise ValueError("we did not find any runs in the provided csv files")
 
-    best_run = max(all_scored_runs, key=lambda x: x["best_elbo_np"])
+    best_candidate_idx = max(
+        range(len(all_scored_runs)),
+        key=lambda idx: all_scored_runs[idx]["best_elbo_np"],
+    )
+    best_run = all_scored_runs[best_candidate_idx]
 
     return {
+        "best_candidate_idx": best_candidate_idx,
         "best_mean": best_run["mean"],
         "best_cov": best_run["cov"],
         "best_std": best_run["std"],
@@ -516,6 +660,8 @@ def find_best_params(
         "final_elbo": best_run["final_elbo"],
         "source_file": best_run["source_file"],
         "restart_idx": best_run["restart_idx"],
+        "method": best_run.get("method", None),
+        "mc_setting": best_run.get("mc_setting", None),
         "raw_best_run": best_run["raw"],
         "all_scored_runs": all_scored_runs,
     }

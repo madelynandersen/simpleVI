@@ -26,12 +26,23 @@ def _run_restart_numpyro(
         n_particles=100,
         step_size=5e-4,
         data=None,
-        model_args=None):
+        model_args=None,
+        track_every=1,
+        guide_kwargs=None):
     optimizer = Adam(step_size=step_size)
     args = _prepare_model_args(data=data, model_args=model_args)
+    track_every = max(1, int(track_every))
+    n_track = int(np.ceil(n_iters / track_every))
+    if guide_kwargs is None:
+        guide_kwargs = {}
 
-    single_svi = SVI(model, guide(model), optimizer, loss=Trace_ELBO())
-    multi_svi = SVI(model, guide(model), optimizer, loss=Trace_ELBO(num_particles=n_particles))
+    single_svi = SVI(model, guide(model, **guide_kwargs), optimizer, loss=Trace_ELBO())
+    multi_svi = SVI(
+        model,
+        guide(model, **guide_kwargs),
+        optimizer,
+        loss=Trace_ELBO(num_particles=n_particles),
+    )
 
     def run_svi(rng_key, svi_model):
         @jax.jit
@@ -44,13 +55,19 @@ def _run_restart_numpyro(
                 local_tracker_shapes = tracker_shapes
 
             tracker = {
-                param: jnp.zeros((n_iters,) + shape)
+                param: jnp.zeros((n_track,) + shape)
                 for param, shape in zip(tracker_params, local_tracker_shapes)
             }
 
             def body_fn(i, val):
-                svi_state, tracker = val
-                svi_state, _ = svi_model.update(svi_state, *args)
+                svi_state, tracker, n_done = val
+
+                def update_once(_, state):
+                    state, _ = svi_model.update(state, *args)
+                    return state
+
+                n_to_run = jnp.minimum(track_every, n_iters - n_done)
+                svi_state = jax.lax.fori_loop(0, n_to_run, update_once, svi_state)
                 params = svi_model.get_params(svi_state)
                 loc, scale = param_getter(params)
 
@@ -58,9 +75,9 @@ def _run_restart_numpyro(
                     param: tracker[param].at[i].set(value)
                     for param, value in zip(tracker_params, (loc, scale))
                 }
-                return svi_state, tracker
+                return svi_state, tracker, n_done + n_to_run
 
-            _, tracker = jax.lax.fori_loop(0, n_iters, body_fn, (svi_state, tracker))
+            _, tracker, _ = jax.lax.fori_loop(0, n_track, body_fn, (svi_state, tracker, 0))
             return tracker
 
         return run_loop(rng_key, *args)
@@ -82,7 +99,9 @@ def run_restart_multid(
         dim,
         n_particles=100, # since this is the default setting
         model_args=None,
-        step_size=5e-4):
+        step_size=5e-4,
+        track_every=1,
+        guide_kwargs=None):
     return _run_restart_numpyro(
         seed=seed,
         model=model,
@@ -95,6 +114,47 @@ def run_restart_multid(
         step_size=step_size,
         data=data,
         model_args=model_args,
+        track_every=track_every,
+        guide_kwargs=guide_kwargs,
+    )
+
+
+def _flatten_autonormal_params(params, site_names):
+    locs, scales = [], []
+    for site_name in site_names:
+        locs.append(jnp.ravel(params[f"{site_name}_auto_loc"]))
+        scales.append(jnp.ravel(params[f"{site_name}_auto_scale"]))
+    return jnp.concatenate(locs), jnp.concatenate(scales)
+
+
+def run_restart_multid_autonormal(
+        seed,
+        model,
+        data,
+        param_name,
+        n_iters,
+        dim,
+        site_names,
+        n_particles=100,
+        model_args=None,
+        step_size=5e-4,
+        track_every=1,
+        guide_kwargs=None):
+    del param_name
+    return _run_restart_numpyro(
+        seed=seed,
+        model=model,
+        guide=AutoNormal,
+        param_getter=lambda params: _flatten_autonormal_params(params, site_names),
+        n_iters=n_iters,
+        tracker_shape=(dim,),
+        tracker_params=('mu_loc', 'std_loc'),
+        n_particles=n_particles,
+        step_size=step_size,
+        data=data,
+        model_args=model_args,
+        track_every=track_every,
+        guide_kwargs=guide_kwargs,
     )
 
 
@@ -107,7 +167,9 @@ def run_restart_multid_fullrank(
         dim,
         n_particles=100,
         model_args=None,
-        step_size=5e-4):
+        step_size=5e-4,
+        track_every=1,
+        guide_kwargs=None):
     del param_name
     return _run_restart_numpyro(
         seed=seed,
@@ -124,6 +186,8 @@ def run_restart_multid_fullrank(
         step_size=step_size,
         data=data,
         model_args=model_args,
+        track_every=track_every,
+        guide_kwargs=guide_kwargs,
     )
 
 
@@ -135,7 +199,9 @@ def fit_multid_fullrank_covariance(
         dim,
         n_particles=100,
         model_args=None,
-        step_size=5e-4):
+        step_size=5e-4,
+        track_every=1,
+        guide_kwargs=None):
     del dim
     optimizer = Adam(step_size=step_size)
     args = _prepare_model_args(data=data, model_args=model_args)
@@ -167,7 +233,9 @@ def run_restart_1d(
         n_iters,
         n_particles=100,
         model_args=None,
-        step_size=5e-4):
+        step_size=5e-4,
+        track_every=1,
+        guide_kwargs=None):
     return _run_restart_numpyro(
         seed=seed,
         model=model,
@@ -183,4 +251,6 @@ def run_restart_1d(
         step_size=step_size,
         data=data,
         model_args=model_args,
+        track_every=track_every,
+        guide_kwargs=guide_kwargs,
     )

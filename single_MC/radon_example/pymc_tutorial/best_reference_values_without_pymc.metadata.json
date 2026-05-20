@@ -1,0 +1,141 @@
+{
+  "method": "find_best_params_saved_outputs_numpyro_elbo",
+  "model": "pymc_tutorial",
+  "included_settings": [
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 0,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 1,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 2,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 3,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 4,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 5,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 6,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 7,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 8,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "numpyro",
+      "setting": "adam_100_mc",
+      "restart_idx": 9,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 0,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 1,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 2,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 3,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 4,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 5,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 6,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 7,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 8,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    },
+    {
+      "package": "tfp",
+      "setting": "adam_100_mc",
+      "restart_idx": 9,
+      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+    }
+  ],
+  "missing_inputs": [],
+  "skipped_inputs": [],
+  "excluded_packages": [
+    "pymc"
+  ],
+  "selection_metric": "maximum NumPyro TraceMeanField_ELBO for fixed saved diagonal guide",
+  "elbo_particles": 4096,
+  "elbo_seed": 0,
+  "best_package": "numpyro",
+  "best_setting": "adam_100_mc",
+  "best_restart_idx": 4,
+  "selection_score": -1062.5693359375,
+  "best_numpyro_elbo": -1062.5693359375,
+  "output": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/best_reference_values_without_pymc.csv",
+  "diagnostics_output": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/best_reference_restarts_without_pymc.csv"
+}

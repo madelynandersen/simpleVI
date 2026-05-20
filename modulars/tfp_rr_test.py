@@ -10,7 +10,87 @@ def _get_base_distribution(distribution):
     return distribution
 
 
-def _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles=100):
+def _thin_tfp_trace(trace, track_every):
+    track_every = max(1, int(track_every))
+    if track_every == 1:
+        return trace
+    return trace[track_every - 1::track_every]
+
+
+def _tfp_fit_surrogate_posterior_thinned(
+        conditioned_log_prob_fn,
+        surrogate_posterior,
+        n_iters,
+        seed,
+        sample_size=1,
+        track_every=1):
+    track_every = max(1, int(track_every))
+    n_track = int((int(n_iters) + track_every - 1) // track_every)
+    even_chunks = int(n_iters) % track_every == 0
+    optimizer = tf.optimizers.Adam()
+    trainable_variables = surrogate_posterior.trainable_variables
+    if hasattr(optimizer, "build"):
+        optimizer.build(trainable_variables)
+
+    @tf.function(jit_compile=False)
+    def run_loop():
+        loc_ta = tf.TensorArray(tf.float32, size=n_track)
+        scale_ta = tf.TensorArray(tf.float32, size=n_track)
+        step = tf.constant(0, dtype=tf.int32)
+
+        for track_idx in tf.range(n_track):
+            if even_chunks:
+                step_iter = range(track_every)
+            else:
+                n_to_run = tf.minimum(
+                    tf.constant(track_every, dtype=tf.int32),
+                    tf.constant(n_iters, dtype=tf.int32) - step,
+                )
+                step_iter = tf.range(n_to_run)
+
+            for _ in step_iter:
+                with tf.GradientTape() as tape:
+                    samples = surrogate_posterior.sample(
+                        sample_size,
+                        seed=tf.stack([tf.cast(seed, tf.int32), step]),
+                    )
+                    loss = -tf.reduce_mean(
+                        conditioned_log_prob_fn(samples)
+                        - surrogate_posterior.log_prob(samples)
+                    )
+                grads = tape.gradient(loss, trainable_variables)
+                optimizer.apply_gradients(zip(grads, trainable_variables))
+                step += 1
+
+            base_dist = _get_base_distribution(surrogate_posterior.distribution)
+            loc_ta = loc_ta.write(track_idx, tf.cast(base_dist.loc, tf.float32))
+            scale_ta = scale_ta.write(track_idx, tf.cast(base_dist.scale, tf.float32))
+
+        return loc_ta.stack(), scale_ta.stack()
+
+    return run_loop()
+
+
+def _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles=100, track_every=1):
+    if int(track_every) > 1:
+        single_loc, single_scale = _tfp_fit_surrogate_posterior_thinned(
+            conditioned_log_prob_fn,
+            single_q_z,
+            n_iters,
+            seed,
+            sample_size=1,
+            track_every=track_every,
+        )
+        multi_loc, multi_scale = _tfp_fit_surrogate_posterior_thinned(
+            conditioned_log_prob_fn,
+            multi_q_z,
+            n_iters,
+            seed + 1000,
+            sample_size=n_particles,
+            track_every=track_every,
+        )
+        return single_loc, single_scale, multi_loc, multi_scale
+
     def single_trace_fn(traceable_quantities):
         base_dist = _get_base_distribution(single_q_z.distribution)
         return base_dist.loc, base_dist.scale
@@ -41,7 +121,7 @@ def _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, se
         seed=seed+1000
     )
 
-    return *single_losses, *multi_losses
+    return tuple(_thin_tfp_trace(trace, track_every) for trace in (*single_losses, *multi_losses))
 
 
 def _iter_bijector_children(bijector):
@@ -104,7 +184,7 @@ def _get_fullrank_loc_and_covariance(surrogate_posterior):
 def tfp_run_restart_1d(seed,
                    conditioned_log_prob_fn,
                    bijector=tfb.Identity(),
-                   n_iters=100_000, n_particles=100):
+                   n_iters=100_000, n_particles=100, track_every=1):
     single_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
         event_shape=(),
         bijector=bijector
@@ -114,25 +194,33 @@ def tfp_run_restart_1d(seed,
         bijector=bijector
     )
 
-    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles)
+    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles, track_every)
 
 def tfp_run_restart_multid(
         seed, dim,
         conditioned_log_prob_fn,
         bijector=tfb.Identity(),
-        n_iters=100_000, n_particles=100):
+        n_iters=100_000, n_particles=100,
+        track_every=1,
+        initial_loc=None,
+        initial_scale=1e-2):
+    initial_parameters = {"scale": initial_scale}
+    if initial_loc is not None:
+        initial_parameters["loc"] = tf.convert_to_tensor(initial_loc, dtype=tf.float32)
 
     single_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
             event_shape=[dim],
             dtype=tf.float32,
-            bijector=bijector
+            bijector=bijector,
+            initial_parameters=initial_parameters,
         )
     multi_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
             event_shape=[dim],
             dtype=tf.float32,
-            bijector=bijector
+            bijector=bijector,
+            initial_parameters=initial_parameters,
         )
-    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles)
+    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles, track_every)
 
 
 def tfp_run_restart_multid_fullrank(

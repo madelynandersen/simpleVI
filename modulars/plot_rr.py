@@ -6,10 +6,18 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+def _iteration_x(n_iters, iteration_stride=1):
+    iteration_stride = max(1, int(iteration_stride))
+    if iteration_stride == 1:
+        return np.arange(n_iters)
+    return (np.arange(n_iters) + 1) * iteration_stride
+
+
 def plot_a_few_trajectories_1d(
         single_tracker, multi_tracker,
         best_mu, best_std, param_name, k=2,
-        label_prefix = "", N = None, WITH_STDS = False):
+        label_prefix = "", N = None, WITH_STDS = False,
+        x=None, limit_around_reference=True):
     """
     single_tracker and multi_tracker should each be N x 2 
     where N is the number of random restarts, and the 2 corresponds to the mean and std trajectories
@@ -33,7 +41,8 @@ def plot_a_few_trajectories_1d(
     multi_stds = multi_tracker[1]
 
     n_runs, n_iters = single_means.shape
-    x = np.arange(n_iters)
+    if x is None:
+        x = np.arange(n_iters)
 
     if N is not None:
         n_runs = min(N, n_runs)
@@ -61,7 +70,8 @@ def plot_a_few_trajectories_1d(
     axs[0].set_xlabel('Iteration')
     axs[0].set_ylabel(r'$\sigma_p$')
     axs[0].grid()
-    axs[0].set_ylim(best_std * 0.6, best_std * 1.6)
+    if limit_around_reference:
+        axs[0].set_ylim(best_std * 0.6, best_std * 1.6)
 
     # mean of mu
     for i in idx:
@@ -81,7 +91,8 @@ def plot_a_few_trajectories_1d(
     axs[1].set_xlabel('Iteration')
     axs[1].set_ylabel(r'$\mu_p$')
     axs[1].grid()
-    axs[1].set_ylim(best_mu - 3 * best_std, best_mu + 3 * best_std)
+    if limit_around_reference:
+        axs[1].set_ylim(best_mu - 3 * best_std, best_mu + 3 * best_std)
 
     # manual legend (so we don’t get 16 duplicate entries)
     axs[0].plot([], [], color='blue', label='1 MC sample (some runs)')
@@ -134,7 +145,8 @@ def plot_mean_band(ax, x, Y, best_value, title, ylabel, WITH_STDS=False, STD=Non
 def plot_mean_band_rrs_1d(
         traj_means, traj_stds, best_mu, best_std,
         x, param_name, n_mc_samps, label_prefix = "",
-        xlim = None, ylim_std = None, ylim_mean = None, WITH_STDS = False):
+        xlim = None, ylim_std = None, ylim_mean = None, WITH_STDS = False,
+        limit_around_reference=True):
     plt.rcParams.update({'font.size': 20})
     # some number of MC samples: mean ± sd across runs
     fig, axs = plt.subplots(2, 1, figsize=(12, 14))
@@ -143,7 +155,8 @@ def plot_mean_band_rrs_1d(
         label_prefix + '{} MC samples: '.format(n_mc_samps) + r'$\sigma_p$' + 'for ' + param_name + r' trajectory $\pm$ 1 SD across runs',
         r'$\sigma_p$', WITH_STDS=WITH_STDS, STD=best_std
     )
-    axs[0].set_ylim(best_std * 0.6, best_std * 1.6)
+    if limit_around_reference:
+        axs[0].set_ylim(best_std * 0.6, best_std * 1.6)
     if ylim_std is not None:
         axs[0].set_ylim(ylim_std)
     
@@ -152,7 +165,8 @@ def plot_mean_band_rrs_1d(
         label_prefix + '{} MC samples: '.format(n_mc_samps) + r'$\mu_p$' + 'for ' + param_name + r' trajectory $\pm$ 1 SD across runs',
         r'$\mu_p$', WITH_STDS=WITH_STDS, STD=best_std
     )
-    axs[1].set_ylim(best_mu - 3 * best_std, best_mu + 3 * best_std)
+    if limit_around_reference:
+        axs[1].set_ylim(best_mu - 3 * best_std, best_mu + 3 * best_std)
     
     if ylim_mean is not None:
         axs[1].set_ylim(ylim_mean)
@@ -181,25 +195,30 @@ so we can also look at other plots (like?)
 def plot_some_dims_multid(
         single_means, single_stds, multi_means, multi_stds,
         best_mus, best_stds, param_name, dim,
-        which_dims=None, k=2, label_prefix = "", N = None, WITH_STDS = False): 
+        which_dims=None, k=2, label_prefix = "", N = None, WITH_STDS = False,
+        iteration_stride=1, limit_around_reference=True): 
     if which_dims is None:
         np.random.seed(0)
         which_dims = np.random.choice(dim, size=min(dim, k), replace=False)
+    x = _iteration_x(single_means.shape[1], iteration_stride=iteration_stride)
     for d in which_dims:
         plot_a_few_trajectories_1d(
             [single_means[:, :, d], single_stds[:, :, d]], [multi_means[:, :, d], multi_stds[:, :, d]],
             best_mus[d], best_stds[d], param_name + "_dim" + str(d),
-            k=k, label_prefix=label_prefix, N=N, WITH_STDS=WITH_STDS
+            k=k, label_prefix=label_prefix, N=N, WITH_STDS=WITH_STDS,
+            x=x, limit_around_reference=limit_around_reference
         )
         plot_mean_band_rrs_1d(
             single_means[:, :, d], single_stds[:, :, d],
-            best_mus[d], best_stds[d], np.arange(single_means.shape[1]),
-            param_name + "_dim" + str(d), n_mc_samps=1, label_prefix=label_prefix, WITH_STDS=WITH_STDS
+            best_mus[d], best_stds[d], x,
+            param_name + "_dim" + str(d), n_mc_samps=1, label_prefix=label_prefix,
+            WITH_STDS=WITH_STDS, limit_around_reference=limit_around_reference
         )
         plot_mean_band_rrs_1d(
             multi_means[:, :, d], multi_stds[:, :, d],
-            best_mus[d], best_stds[d], np.arange(single_means.shape[1]),  # x-axis is number of iterations
-            param_name + "_dim" + str(d), n_mc_samps=100, label_prefix=label_prefix, WITH_STDS=WITH_STDS
+            best_mus[d], best_stds[d], x,
+            param_name + "_dim" + str(d), n_mc_samps=100, label_prefix=label_prefix,
+            WITH_STDS=WITH_STDS, limit_around_reference=limit_around_reference
         )
 
 

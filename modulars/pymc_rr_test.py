@@ -1,3 +1,5 @@
+import gc
+
 import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
@@ -8,6 +10,35 @@ pytensor.config.cxx = '/usr/bin/clang++'
 from pymc.logprob.transforms import Transform
 
 
+class _ThinnedTracker:
+    """Record PyMC ADVI stats every `track_every` iterations."""
+
+    def __init__(self, track_every=1, n_iters=None, dtype=np.float32, **kwargs):
+        self.track_every = max(1, int(track_every))
+        self.n_iters = None if n_iters is None else int(n_iters)
+        self.n_seen = 0
+        self.dtype = dtype
+        self.whatchdict = kwargs
+        self.hist = {key: [] for key in kwargs}
+
+    def __call__(self, approx, hist, i):
+        self.n_seen += 1
+        if self.n_seen % self.track_every != 0 and self.n_seen != self.n_iters:
+            return
+        for key, fn in self.whatchdict.items():
+            try:
+                res = fn()
+            except Exception:
+                res = fn(approx, hist, i)
+            self.hist[key].append(np.asarray(res, dtype=self.dtype).copy())
+
+    def __getitem__(self, item):
+        return self.hist[item]
+
+    def array(self, item):
+        return np.asarray(self.hist[item], dtype=self.dtype)
+
+
 
 """
 Random restart code for running pymc VI
@@ -16,7 +47,17 @@ be created externally and passed in as an argument,
 so that we can run the same model with different random restarts
 """
 
-def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', seed=0, SINGLE_DIM=True, **kwargs):
+def run_pymc_VI(
+        model,
+        n_mc_samples=1,
+        n_iters=100_000,
+        optimizer='default',
+        seed=0,
+        SINGLE_DIM=True,
+        track_every=1,
+        track_cov=True,
+        tracker_dtype=np.float32,
+        **kwargs):
     """
     Run pymc VI with the given model and return the mean and std trajectories
 
@@ -26,14 +67,22 @@ def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', see
     advi = pm.ADVI(model=model, random_seed=seed)
 
     if SINGLE_DIM:
-        tracker = pm.callbacks.Tracker(
+        tracker = _ThinnedTracker(
+            track_every=track_every,
+            n_iters=n_iters,
+            dtype=tracker_dtype,
             mean=advi.approx.mean.eval,
             std=advi.approx.std.eval,
         )
     else:
-        tracker = pm.callbacks.Tracker(
+        scale_name = "cov" if track_cov else "std"
+        scale_fn = advi.approx.cov.eval if track_cov else advi.approx.std.eval
+        tracker = _ThinnedTracker(
+            track_every=track_every,
+            n_iters=n_iters,
+            dtype=tracker_dtype,
             mean=advi.approx.mean.eval,
-            cov=advi.approx.cov.eval,
+            **{scale_name: scale_fn},
         )
 
     if optimizer == 'default':
@@ -49,13 +98,23 @@ def run_pymc_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', see
             obj_n_mc=n_mc_samples,
             obj_optimizer=pm.adam()
         )
-    if SINGLE_DIM:
-        return tracker['mean'], tracker['std']
-    else:
-        return tracker['mean'], tracker['cov']
+    mean_traj = tracker.array('mean')
+    scale_traj = tracker.array('std' if SINGLE_DIM else scale_name)
+    del approx, advi, tracker
+    gc.collect()
+    return mean_traj, scale_traj
 
 
-def run_pymc_fullrank_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='default', seed=0, SINGLE_DIM=False, **kwargs):
+def run_pymc_fullrank_VI(
+        model,
+        n_mc_samples=1,
+        n_iters=100_000,
+        optimizer='default',
+        seed=0,
+        SINGLE_DIM=False,
+        track_every=1,
+        tracker_dtype=np.float32,
+        **kwargs):
     """
     Run PyMC full-rank ADVI and return the mean and covariance trajectories.
     """
@@ -63,26 +122,33 @@ def run_pymc_fullrank_VI(model, n_mc_samples=1, n_iters=100_000, optimizer='defa
     np.random.seed(seed)
     advi = pm.FullRankADVI(model=model, random_seed=seed)
 
-    tracker = pm.callbacks.Tracker(
+    tracker = _ThinnedTracker(
+        track_every=track_every,
+        n_iters=n_iters,
+        dtype=tracker_dtype,
         mean=advi.approx.mean.eval,
         cov=advi.approx.cov.eval,
     )
 
     if optimizer == 'default':
-        advi.fit(
+        approx = advi.fit(
             n_iters, callbacks=[tracker],
             progressbar=False,
             obj_n_mc=n_mc_samples
         )
     else:
-        advi.fit(
+        approx = advi.fit(
             n_iters, callbacks=[tracker],
             progressbar=False,
             obj_n_mc=n_mc_samples,
             obj_optimizer=pm.adam()
         )
 
-    return tracker['mean'], tracker['cov']
+    mean_traj = tracker.array('mean')
+    cov_traj = tracker.array('cov')
+    del approx, advi, tracker
+    gc.collect()
+    return mean_traj, cov_traj
 
 
 def fit_pymc_fullrank_covariance(model, n_mc_samples=100, n_iters=100_000, optimizer='default', seed=0):

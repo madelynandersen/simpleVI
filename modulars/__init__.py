@@ -1,5 +1,5 @@
 try:
-    from .numpyro_rr_test import run_restart_1d, run_restart_multid, run_restart_multid_fullrank
+    from .numpyro_rr_test import run_restart_1d, run_restart_multid, run_restart_multid_autonormal, run_restart_multid_fullrank
 except ModuleNotFoundError:
     # NumPyro not in this environment
     pass
@@ -16,3 +16,6 @@ except ModuleNotFoundError:
 from .plot_rr import plot_a_few_trajectories_1d, plot_mean_band, plot_mean_band_rrs_1d
 from .utils import *
 from .distributions import *
+from .radon import *
+from .pulmonary import *
+from .logistic_regression import *
