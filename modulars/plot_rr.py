@@ -106,7 +106,7 @@ def plot_a_few_trajectories_1d(
     plt.tight_layout()
     plt.show()
 
-def plot_mean_band(ax, x, Y, best_value, title, ylabel, WITH_STDS=False, STD=None):
+def plot_mean_band(ax, x, Y, best_value, title, ylabel, WITH_STDS=False, STD=None, WHICH_STDS=[1]):
     """
     Y: (N, T) trajectories
 
@@ -117,8 +117,8 @@ def plot_mean_band(ax, x, Y, best_value, title, ylabel, WITH_STDS=False, STD=Non
     m = Y.mean(axis=0)
     s = Y.std(axis=0)
     ax.plot(x, m, linewidth=2, label='Mean across runs')
-    ax.fill_between(x, m - s, m + s, alpha=0.5, label='±1 SD across runs')
-    ax.fill_between(x, m - 2 * s, m + 2 * s, alpha=0.25, label='±2 SD across runs')
+    for std_mult in WHICH_STDS:
+        ax.fill_between(x, m - std_mult * s, m + std_mult * s, alpha=0.5, label=r'$\pm$' + '{} SD across runs'.format(std_mult))
     ax.axhline(best_value, color='red', linestyle='--', label='Best value')
     if WITH_STDS:
         if ylabel==r'$\mu_p$':
@@ -146,14 +146,26 @@ def plot_mean_band_rrs_1d(
         traj_means, traj_stds, best_mu, best_std,
         x, param_name, n_mc_samps, label_prefix = "",
         xlim = None, ylim_std = None, ylim_mean = None, WITH_STDS = False,
-        limit_around_reference=True):
+        limit_around_reference=True, WHICH_STDS=[1]):
+    
+    def legend_label(mu_or_sig=r"$\sigma_p$"):
+        if WITH_STDS:
+            STD_STRING = r" $\pm$ " + ", ".join([str(x) for x in WHICH_STDS]) + " SD"
+        else:
+            STD_STRING = None
+        label = label_prefix + '{} MC samples: '.format(n_mc_samps) + mu_or_sig + ' for ' + param_name + ' trajectory' + STD_STRING + ' across runs'
+        return label
+
+    
+
     plt.rcParams.update({'font.size': 20})
     # some number of MC samples: mean ± sd across runs
     fig, axs = plt.subplots(2, 1, figsize=(12, 14))
     plot_mean_band(
         axs[0], x, traj_stds, best_std,
-        label_prefix + '{} MC samples: '.format(n_mc_samps) + r'$\sigma_p$' + 'for ' + param_name + r' trajectory $\pm$ 1 SD across runs',
-        r'$\sigma_p$', WITH_STDS=WITH_STDS, STD=best_std
+        legend_label(r"$\sigma_p$"), r'$\sigma_p$',
+        WITH_STDS=WITH_STDS, STD=best_std,
+        WHICH_STDS=WHICH_STDS
     )
     if limit_around_reference:
         axs[0].set_ylim(best_std * 0.6, best_std * 1.6)
@@ -162,8 +174,9 @@ def plot_mean_band_rrs_1d(
     
     plot_mean_band(
         axs[1], x, traj_means, best_mu,
-        label_prefix + '{} MC samples: '.format(n_mc_samps) + r'$\mu_p$' + 'for ' + param_name + r' trajectory $\pm$ 1 SD across runs',
-        r'$\mu_p$', WITH_STDS=WITH_STDS, STD=best_std
+        legend_label(r"$\mu_p$"), r'$\mu_p$',
+        WITH_STDS=WITH_STDS, STD=best_std,
+        WHICH_STDS=WHICH_STDS
     )
     if limit_around_reference:
         axs[1].set_ylim(best_mu - 3 * best_std, best_mu + 3 * best_std)
