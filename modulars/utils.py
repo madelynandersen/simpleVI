@@ -1,10 +1,25 @@
 # random functions that we don't want to keep copy and pasting
 import json
 import os
+import csv
+from pathlib import Path
 import numpy as np
 from tqdm.notebook import tqdm
 from tqdm import tqdm as standard_tqdm
 from scipy.special import logit, expit
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def repo_relative_path(path, repo_root=REPO_ROOT):
+    """Return a repo-relative path for files inside this checkout."""
+    path = Path(path)
+    repo_root = Path(repo_root).resolve()
+    try:
+        return str(path.resolve().relative_to(repo_root))
+    except (OSError, ValueError):
+        return str(path)
 
 
 """
@@ -138,6 +153,115 @@ def _logistic_normal_mean_std_mc(mu, sigma, n_samples=10_000, seed=0):
 
 def _trace_locscale_to_theta_moments(loc_trace, scale_trace, n_samples=10_000, seed=0):
     return logistic_moments(loc_trace, scale_trace, n_samples=n_samples, seed=seed, ddof=1)
+
+
+def save_rr_tracking_csv(csv_path, trajectory_sets, iterations=None, float_format=".17g"):
+    """
+    Save processed 1D random-restart trajectories to a CSV that can be loaded
+    directly for plotting.
+
+    The CSV is intentionally wide: each row is one restart/statistic/MC condition
+    and the remaining columns are the full trajectory over iterations.
+    """
+    if not isinstance(trajectory_sets, dict):
+        trajectory_sets = {"default": trajectory_sets}
+
+    first_n_iters = None
+    prepared = {}
+    for scenario, trajectories in trajectory_sets.items():
+        if len(trajectories) != 4:
+            raise ValueError(
+                "Each trajectory set must contain "
+                "(single_means, single_stds, multi_means, multi_stds)."
+            )
+        arrays = tuple(np.asarray(traj) for traj in trajectories)
+        if any(arr.ndim != 2 for arr in arrays):
+            raise ValueError("All random-restart trajectories must be 2D arrays.")
+        shapes = {arr.shape for arr in arrays}
+        if len(shapes) != 1:
+            raise ValueError(
+                "All trajectories in a scenario must have matching (restart, iteration) shapes."
+            )
+        n_iters = arrays[0].shape[1]
+        if first_n_iters is None:
+            first_n_iters = n_iters
+        elif n_iters != first_n_iters:
+            raise ValueError("All scenarios must have the same number of iterations.")
+        prepared[scenario] = arrays
+
+    if first_n_iters is None:
+        raise ValueError("No trajectories were provided.")
+
+    if iterations is None:
+        iterations = np.arange(first_n_iters)
+    else:
+        iterations = np.asarray(iterations)
+        if iterations.shape != (first_n_iters,):
+            raise ValueError("iterations must have one value per trajectory column.")
+
+    directory = os.path.dirname(os.fspath(csv_path))
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+    labels = (
+        ("1", "mean"),
+        ("1", "std"),
+        ("100", "mean"),
+        ("100", "std"),
+    )
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            ["scenario", "mc_samples", "statistic", "restart"]
+            + [format(float(x), float_format) for x in iterations]
+        )
+        for scenario, arrays in prepared.items():
+            for (mc_samples, statistic), values in zip(labels, arrays):
+                for restart, row in enumerate(values):
+                    writer.writerow(
+                        [scenario, mc_samples, statistic, restart]
+                        + [format(float(x), float_format) for x in row]
+                    )
+
+
+def load_rr_tracking_csv(csv_path, scenario="default"):
+    """
+    Load processed 1D random-restart trajectories saved by save_rr_tracking_csv.
+
+    Returns single_means, single_stds, multi_means, multi_stds, x.
+    """
+    grouped = {}
+    with open(csv_path, "r", newline="") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        if header[:4] != ["scenario", "mc_samples", "statistic", "restart"]:
+            raise ValueError("Unexpected random-restart CSV header.")
+        x = np.asarray(header[4:], dtype=float)
+        for row in reader:
+            row_scenario = row[0]
+            if scenario is not None and row_scenario != scenario:
+                continue
+            key = (int(row[1]), row[2])
+            grouped.setdefault(key, []).append(
+                (int(row[3]), np.asarray(row[4:], dtype=float))
+            )
+
+    def stack(mc_samples, statistic):
+        key = (mc_samples, statistic)
+        if key not in grouped:
+            raise ValueError(
+                f"No rows found for scenario={scenario!r}, "
+                f"mc_samples={mc_samples}, statistic={statistic!r}."
+            )
+        return np.stack([values for _, values in sorted(grouped[key])], axis=0)
+
+    return (
+        stack(1, "mean"),
+        stack(1, "std"),
+        stack(100, "mean"),
+        stack(100, "std"),
+        x,
+    )
 
 
 # a function to apply the given push-forward transformation
@@ -481,6 +605,7 @@ def find_best_params(
         processed_mc_settings = set(processed_mc_settings)
 
     for method, file_name in result_specs:
+        source_file = repo_relative_path(file_name)
         loaded_runs = load_from_csv(file_name)
 
         final_summary_payload = (
@@ -508,11 +633,11 @@ def find_best_params(
             if final_means.ndim == 1:
                 final_means = final_means[None, :]
                 final_stds = final_stds[None, :]
-            if final_means.shape != final_stds.shape:
-                raise ValueError(
-                    f"final mean/std shape mismatch in {file_name}: "
-                    f"{final_means.shape} vs {final_stds.shape}"
-                )
+                if final_means.shape != final_stds.shape:
+                    raise ValueError(
+                        f"final mean/std shape mismatch in {source_file}: "
+                        f"{final_means.shape} vs {final_stds.shape}"
+                    )
 
             run_iter = []
             for local_restart_idx in range(final_means.shape[0]):
@@ -616,7 +741,7 @@ def find_best_params(
                     data=obs_counts,
                     grad_samps=grad_samps,
                     seed=score_seed,
-                    source_file=file_name,
+                    source_file=source_file,
                     restart_idx=local_restart_idx,
                     method=method,
                     mc_setting=candidate["mc_setting"],
@@ -624,7 +749,7 @@ def find_best_params(
                 )
 
             scored_run = {
-                "source_file": file_name,
+                "source_file": source_file,
                 "restart_idx": local_restart_idx,
                 "mean": mean,
                 "cov": cov,

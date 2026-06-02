@@ -1,0 +1,89 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 10000 (Default)
+#     grad_samples = 100
+#     elbo_samples = 100 (Default)
+#     eta = 1 (Default)
+#     adapt
+#       engaged = true (Default)
+#       iter = 50 (Default)
+#     tol_rel_obj = 0.01 (Default)
+#     eval_elbo = 100 (Default)
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /var/folders/k_/lm3f3ty933bgx8bfm0dsx7cr0000gn/T/tmp24rl7p3e/3xvl5o3q.json
+# init = 2 (Default)
+# random
+#   seed = 10
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/1dgaussian-20260528174608.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/1dgaussian-20260528174608-diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+100,0.003,-348.56037
+200,0.006,-164.56988
+300,0.009,-536.54545
+400,0.012,-466.89469
+500,0.014,-396.81718
+600,0.017,-356.01264
+700,0.02,-332.9943
+800,0.023,-306.15139
+900,0.025,-291.32693
+1000,0.028,-275.54522
+1100,0.031,-268.83608
+1200,0.033,-249.84698
+1300,0.036,-243.53204
+1400,0.038,-246.13141
+1500,0.041,-221.501
+1600,0.043,-227.09961
+1700,0.045,-219.43977
+1800,0.048,-214.81639
+1900,0.05,-211.43723
+2000,0.052,-209.10954
+2100,0.055,-207.07065
+2200,0.057,-189.11947
+2300,0.059,-200.07683
+2400,0.062,-202.00915
+2500,0.064,-213.8148
+2600,0.066,-192.3432
+2700,0.069,-194.12425
+2800,0.071,-187.68341
+2900,0.073,-189.11957
+3000,0.076,-184.89277
+3100,0.078,-188.37099
+3200,0.08,-183.52249
+3300,0.082,-187.33221
+3400,0.084,-181.26256
+3500,0.086,-180.58866
+3600,0.088,-184.67599
+3700,0.09,-184.24962
+3800,0.092,-176.58605
+3900,0.094,-184.31613
+4000,0.096,-177.88012
+4100,0.099,-178.03637
+4200,0.101,-179.25984
+4300,0.103,-170.30558
+4400,0.105,-175.08361
+4500,0.107,-172.66346
+4600,0.109,-181.67542
+4700,0.111,-173.2344
+4800,0.113,-172.35739
+4900,0.115,-172.99927
+5000,0.117,-169.23929
+5100,0.119,-169.8228
+5200,0.121,-168.89025
+5300,0.123,-167.46707
+5400,0.125,-171.60401
+5500,0.127,-168.2293
+5600,0.129,-167.9558

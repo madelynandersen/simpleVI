@@ -1,0 +1,50 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 10000 (Default)
+    grad_samples = 1 (Default)
+    elbo_samples = 100 (Default)
+    eta = 1 (Default)
+    adapt
+      engaged = false
+      iter = 50 (Default)
+    tol_rel_obj = 0.01 (Default)
+    eval_elbo = 100 (Default)
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/stan_data.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_1/eta_1p0/output.csv
+  diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_1/eta_1p0/diagnostic.csv
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 3e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+Adjust your expectations accordingly!
+
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+   100         -147.297             1.000            1.000
+   200         -148.190             0.503            1.000
+   300         -147.454             0.337            0.006   MEDIAN ELBO CONVERGED
+
+Drawing a sample of size 1000 from the approximate posterior... 
+COMPLETED.

@@ -1,0 +1,69 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 10000 (Default)
+#     grad_samples = 100
+#     elbo_samples = 100 (Default)
+#     eta = 100
+#     adapt
+#       engaged = false
+#       iter = 50 (Default)
+#     tol_rel_obj = 0.01 (Default)
+#     eval_elbo = 100 (Default)
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/stan_data.json
+# init = 2 (Default)
+# random
+#   seed = 12
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_100/eta_100p0/output.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_100/eta_100p0/diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+100,0.002,-705.10176
+200,0.004,-761.51695
+300,0.006,-483.15693
+400,0.008,-460.87427
+500,0.01,-431.02907
+600,0.012,-362.89024
+700,0.014,-318.43954
+800,0.016,-304.4581
+900,0.019,-286.99483
+1000,0.021,-268.90018
+1100,0.023,-262.05943
+1200,0.025,-244.44376
+1300,0.027,-238.51246
+1400,0.029,-246.94453
+1500,0.031,-235.60463
+1600,0.033,-222.24058
+1700,0.035,-222.5178
+1800,0.038,-216.21089
+1900,0.04,-219.2641
+2000,0.042,-203.52354
+2100,0.044,-200.46466
+2200,0.046,-197.01312
+2300,0.048,-197.92074
+2400,0.05,-201.44036
+2500,0.053,-197.60992
+2600,0.055,-191.42586
+2700,0.057,-192.64421
+2800,0.059,-191.63933
+2900,0.061,-188.64172
+3000,0.063,-190.24072
+3100,0.065,-186.05747
+3200,0.067,-178.80632
+3300,0.07,-182.30842
+3400,0.072,-183.08684
+3500,0.074,-184.75548
+3600,0.076,-183.77429

@@ -1,0 +1,63 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 300000
+#     grad_samples = 1 (Default)
+#     elbo_samples = 100 (Default)
+#     eta = 0.1
+#     adapt
+#       engaged = false
+#       iter = 50 (Default)
+#     tol_rel_obj = 1e-16
+#     eval_elbo = 10000
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/stan_data.json
+# init = 2 (Default)
+# random
+#   seed = 12
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grid/grad_samples_1/eta_0p1/output.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grid/grad_samples_1/eta_0p1/diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+10000,0.007,-147.31448
+20000,0.014,-147.26421
+30000,0.022,-147.31636
+40000,0.029,-147.51991
+50000,0.037,-147.31445
+60000,0.044,-147.36336
+70000,0.051,-147.42541
+80000,0.059,-147.38281
+90000,0.066,-147.3371
+100000,0.074,-147.36989
+110000,0.081,-147.46
+120000,0.088,-147.3464
+130000,0.096,-147.19385
+140000,0.103,-147.22562
+150000,0.11,-147.27968
+160000,0.117,-147.5065
+170000,0.125,-147.28607
+180000,0.132,-147.16047
+190000,0.14,-147.38301
+200000,0.147,-147.31354
+210000,0.154,-147.31989
+220000,0.162,-147.39013
+230000,0.169,-147.3504
+240000,0.176,-147.42618
+250000,0.184,-147.31465
+260000,0.192,-147.43587
+270000,0.199,-147.4395
+280000,0.206,-147.30484
+290000,0.213,-147.28541
+300000,0.221,-147.32432

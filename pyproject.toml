@@ -14,10 +14,13 @@ authors = [
   { name = "Madelyn Andersen", email = "madelyna@mit.edu" }
 ]
 
-# Core deps used almost everywhere
+# Core deps used by the reusable helpers imported from modulars.
 dependencies = [
   "numpy>=1.22",
   "matplotlib>=3.7",
+  "pandas>=2.0",
+  "scipy>=1.10",
+  "tqdm>=4.65",
 ]
 
 [project.urls]
@@ -44,9 +47,39 @@ tfp = [
   "tensorflow_probability>=0.24",
 ]
 
+# Pyro / PyTorch stack
+pyro = [
+  "torch>=2.0",
+  "pyro-ppl>=1.9",
+]
+
+# Data preparation helpers
+data = [
+  "xlrd>=2.0",
+]
+
+# Notebook execution helpers
+notebooks = [
+  "ipykernel>=6",
+  "jupyter>=1",
+  "nbclient>=0.10",
+]
+
 # Convenience extra to install everything
 all = [
-  "simplevi[numpyro,pymc,tfp]",
+  "jax>=0.4",
+  "jaxlib>=0.4",
+  "numpyro>=0.13",
+  "pymc>=5.0",
+  "pytensor>=2.0",
+  "tensorflow>=2.15",
+  "tensorflow_probability>=0.24",
+  "torch>=2.0",
+  "pyro-ppl>=1.9",
+  "xlrd>=2.0",
+  "ipykernel>=6",
+  "jupyter>=1",
+  "nbclient>=0.10",
 ]
 
 [tool.setuptools]

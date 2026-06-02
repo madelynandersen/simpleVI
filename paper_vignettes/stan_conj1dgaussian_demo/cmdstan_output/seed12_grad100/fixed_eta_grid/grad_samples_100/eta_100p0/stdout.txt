@@ -1,0 +1,83 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 10000 (Default)
+    grad_samples = 100
+    elbo_samples = 100 (Default)
+    eta = 100
+    adapt
+      engaged = false
+      iter = 50 (Default)
+    tol_rel_obj = 0.01 (Default)
+    eval_elbo = 100 (Default)
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/stan_data.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_100/eta_100p0/output.csv
+  diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_100/eta_100p0/diagnostic.csv
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 3e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+Adjust your expectations accordingly!
+
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+   100         -705.102             1.000            1.000
+   200         -761.517             0.537            1.000
+   300         -483.157             0.550            0.576
+   400         -460.874             0.425            0.576
+   500         -431.029             0.354            0.074
+   600         -362.890             0.326            0.188
+   700         -318.440             0.299            0.140
+   800         -304.458             0.268            0.140
+   900         -286.995             0.245            0.074
+  1000         -268.900             0.227            0.074
+  1100         -262.059             0.130            0.069
+  1200         -244.444             0.129            0.069
+  1300         -238.512             0.074            0.067
+  1400         -246.945             0.073            0.067
+  1500         -235.605             0.071            0.061
+  1600         -222.241             0.058            0.060
+  1700         -222.518             0.044            0.048
+  1800         -216.211             0.042            0.048
+  1900         -219.264             0.038            0.034
+  2000         -203.524             0.039            0.034
+  2100         -200.465             0.038            0.034
+  2200         -197.013             0.032            0.029
+  2300         -197.921             0.030            0.029
+  2400         -201.440             0.028            0.018
+  2500         -197.610             0.026            0.018
+  2600         -191.426             0.023            0.018
+  2700         -192.644             0.023            0.018
+  2800         -191.639             0.021            0.017
+  2900         -188.642             0.021            0.017
+  3000         -190.241             0.014            0.016
+  3100         -186.057             0.015            0.017
+  3200         -178.806             0.017            0.017
+  3300         -182.308             0.019            0.019
+  3400         -183.087             0.017            0.019
+  3500         -184.755             0.016            0.016
+  3600         -183.774             0.014            0.009   MEDIAN ELBO CONVERGED
+
+Drawing a sample of size 1000 from the approximate posterior... 
+COMPLETED.

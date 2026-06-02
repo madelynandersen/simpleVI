@@ -1,0 +1,63 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 300000
+#     grad_samples = 100
+#     elbo_samples = 100 (Default)
+#     eta = 100
+#     adapt
+#       engaged = false
+#       iter = 50 (Default)
+#     tol_rel_obj = 1e-16
+#     eval_elbo = 10000
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/stan_data.json
+# init = 2 (Default)
+# random
+#   seed = 12
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grid/grad_samples_100/eta_100p0/output.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grid/grad_samples_100/eta_100p0/diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+10000,0.216,-159.9265
+20000,0.432,-152.34144
+30000,0.648,-151.38214
+40000,0.865,-150.55232
+50000,1.08,-150.44284
+60000,1.296,-149.86826
+70000,1.512,-149.73497
+80000,1.731,-149.19781
+90000,1.953,-148.34188
+100000,2.169,-150.21987
+110000,2.385,-148.50167
+120000,2.602,-148.35587
+130000,2.821,-147.93935
+140000,3.039,-148.40932
+150000,3.256,-148.3239
+160000,3.473,-147.78101
+170000,3.691,-148.82498
+180000,3.911,-148.01881
+190000,4.13,-147.3267
+200000,4.345,-147.49047
+210000,4.561,-148.97186
+220000,4.776,-147.47584
+230000,4.994,-147.29089
+240000,5.211,-147.51876
+250000,5.428,-147.3501
+260000,5.646,-148.11637
+270000,5.866,-147.75278
+280000,6.081,-147.83748
+290000,6.296,-147.60807
+300000,6.513,-147.54858

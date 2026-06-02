@@ -1,0 +1,48 @@
+method = pathfinder
+  pathfinder
+    init_alpha = 0.001 (Default)
+    tol_obj = 1e-12 (Default)
+    tol_rel_obj = 10000 (Default)
+    tol_grad = 1e-08 (Default)
+    tol_rel_grad = 1e+07 (Default)
+    tol_param = 1e-08 (Default)
+    history_size = 5 (Default)
+    num_psis_draws = 1000 (Default)
+    num_paths = 4 (Default)
+    save_single_paths = false (Default)
+    psis_resample = true (Default)
+    calculate_lp = true (Default)
+    max_lbfgs_iters = 1000 (Default)
+    num_draws = 1000 (Default)
+    num_elbo_draws = 25 (Default)
+id = 1 (Default)
+data
+  file = /var/folders/k_/lm3f3ty933bgx8bfm0dsx7cr0000gn/T/tmp24rl7p3e/w419_rru.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/1dgaussian-20260528174835.csv
+  diagnostic_file =  (Default)
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+Path [1] :Initial log joint density = -407.597419
+Path [1] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes 
+              2      -5.084e+01      2.404e+00   8.045e-14    1.000e+00  1.000e+00        56 -4.724e+02 -1.473e+02                  
+Path [1] :Best Iter: [2] ELBO (-147.337212) evaluations: (56)
+Path [2] :Initial log joint density = -183.297291
+Path [2] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes 
+              2      -5.084e+01      1.465e+00   9.720e-14    1.000e+00  1.000e+00        56 -2.709e+02 -1.473e+02                  
+Path [2] :Best Iter: [2] ELBO (-147.337212) evaluations: (56)
+Path [3] :Initial log joint density = -290.053803
+Path [3] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes 
+              2      -5.084e+01      1.968e+00   9.720e-14    1.000e+00  1.000e+00        56 -3.666e+02 -1.473e+02                  
+Path [3] :Best Iter: [2] ELBO (-147.337212) evaluations: (56)
+Path [4] :Initial log joint density = -756.804763
+Path [4] : Iter      log prob        ||dx||      ||grad||     alpha      alpha0      # evals       ELBO    Best ELBO        Notes 
+              2      -5.084e+01      3.382e+00   3.469e-13    1.000e+00  1.000e+00        56 -7.857e+02 -1.473e+02                  
+Path [4] :Best Iter: [2] ELBO (-147.337212) evaluations: (56)

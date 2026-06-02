@@ -18,7 +18,8 @@ def beta_posterior(successes, trials, alpha_0, beta_0, *args, **kwargs):
     }
 
 def gaussian_1d_posterior(data, n_samples=100, mu_prior=0, sigma_prior=1, sigma_like=10):
-    assert len(data) == n_samples, "data length must match n_samples"
+    if len(data) != n_samples:
+        raise ValueError("data length must match n_samples")
     true_mu_post = (sigma_like**2 * mu_prior + sigma_prior**2 * np.sum(data)) / (sigma_like**2 + n_samples * sigma_prior**2)
     true_sigma_post = np.sqrt(1 / (1/sigma_prior**2 + n_samples/sigma_like**2))
     return true_mu_post, true_sigma_post
@@ -76,7 +77,8 @@ def gaussian_multid(n_samples=100, mu_like=0, scale_like=1, dim=5, seed=20, diag
         observed_data = np.random.normal(loc=mu_like, scale=np.sqrt(scale_like), size=(n_samples, dim))
         # n_samples observations per dimension
     else:
-        assert type(scale_like) == np.ndarray and scale_like.shape == (dim, dim), "scale_like must be a (dim, dim) covariance matrix"
+        if not (type(scale_like) == np.ndarray and scale_like.shape == (dim, dim)):
+            raise ValueError("scale_like must be a (dim, dim) covariance matrix")
         mu_like = ensure_arr(mu_like, dim)
         observed_data = np.random.multivariate_normal(mean=mu_like, cov=scale_like, size=n_samples)
     return observed_data
@@ -130,7 +132,8 @@ def gen_multinomial_data_shared(theta_like, N, total_count=50, SEED=20):
     Generate multinomial data with a fixed theta vector across N rows
     where each row has a total count of `total_count`.
     """
-    assert np.isclose(theta_like.sum(), 1.0), "Theta vector must sum to 1"
+    if not np.isclose(theta_like.sum(), 1.0):
+        raise ValueError("Theta vector must sum to 1")
     if N == 0 or total_count == 0: return []
     n_vec = np.full(N, int(total_count), dtype=int)
     counts = np.vstack([np.random.multinomial(n_i, theta_like) for n_i in n_vec])

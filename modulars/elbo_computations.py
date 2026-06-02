@@ -7,7 +7,10 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import TraceMeanField_ELBO
 from numpyro.distributions.transforms import StickBreakingTransform
-from bakeoff.calculations.elbo_dist_classes import elbo_dist_class
+try:
+    from bakeoff.calculations.elbo_dist_classes import elbo_dist_class
+except ModuleNotFoundError:
+    elbo_dist_class = None
 
 import jax.numpy as jnp
 import jax
@@ -15,6 +18,11 @@ from numpyro.distributions.transforms import Transform
 from numpyro.distributions.util import validate_sample
 from numpyro.distributions import constraints
 from numpyro.distributions.transforms import biject_to
+
+
+def _require(condition, message):
+    if not condition:
+        raise ValueError(message)
 
 
 class IteratedSigmoidCenteredTransform(Transform):
@@ -176,7 +184,7 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                 numpyro.sample(param_name, dist.HalfNormal(*init_vals), obs=data)
             return model
         elif model_str == 'invgamma':
-            assert len(init_vals) == 3, "Inverse Gamma requires three parameters (shape, scale, loc)"
+            _require(len(init_vals) == 3, "Inverse Gamma requires three parameters (shape, scale, loc)")
             def model(data):
                 sig_sq = numpyro.sample(param_name, dist.InverseGamma(init_vals[0], init_vals[1]))
                 numpyro.sample('y', dist.Normal(init_vals[2], jnp.sqrt(sig_sq)), obs=data)
@@ -200,14 +208,14 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                 numpyro.sample('y', dist.Bernoulli(p), obs=data)
             return model
         elif model_str == 'lognormal':
-            assert len(init_vals) == 3, "LogNormal requires three parameters (mean, sigma, std of likelihood)"
+            _require(len(init_vals) == 3, "LogNormal requires three parameters (mean, sigma, std of likelihood)")
             # LogNormal prior, Normal likelihood
             def model(data):
                 mu = numpyro.sample(param_name, dist.LogNormal(init_vals[0], init_vals[1]))
                 numpyro.sample('y', dist.Normal(mu, init_vals[2]), obs=data)
             return model
         elif model_str == 'uniform':
-            assert len(init_vals) == 3, "Uniform requires three parameters (lower, upper, std of likelihood)"
+            _require(len(init_vals) == 3, "Uniform requires three parameters (lower, upper, std of likelihood)")
             # Uniform prior, Normal likelihood
             def model(data):
                 mu = numpyro.sample(param_name, dist.Uniform(init_vals[0], init_vals[1]))
@@ -242,11 +250,11 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
         elif model_str in ['multidirich_agg', 'multidirich']:
             # Aggregated counts version (recommended): data is [N, K] int; sum rows once
             def model(data):
-                assert data.ndim == 2, "data must be [N, K]"
+                _require(data.ndim == 2, "data must be [N, K]")
                 counts = data.sum(axis=0)                      # [K]
                 total  = counts.sum()                          # scalar
                 alpha  = jnp.asarray(init_vals[0])             # [K]
-                assert alpha.shape[-1] == counts.shape[-1], "alpha_prior length must equal K"
+                _require(alpha.shape[-1] == counts.shape[-1], "alpha_prior length must equal K")
                 theta  = numpyro.sample(param_name, dist.Dirichlet(alpha))
                 numpyro.sample('y', dist.Multinomial(total_count=total, probs=theta), obs=counts)
             return model
@@ -255,10 +263,10 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
         elif model_str in ['linreg', 'linear_regression']:
             # todo multivariate regression
             # init_vals = (sigma_scale, intercept_loc, intercept_scale, slope_loc, slope_scale)
-            assert len(init_vals) == 5, (
+            _require(len(init_vals) == 5, (
                 "For 'linreg', init_vals must be "
                 "(sigma_scale, intercept_loc, intercept_scale, slope_loc, slope_scale)"
-            )
+            ))
             def model(data):
                 # Accept (x, y) or {'x': x, 'y': y}
                 if isinstance(data, (tuple, list)) and len(data) == 2:
@@ -289,13 +297,13 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                 x = jnp.asarray(x); y = jnp.asarray(y)
                 if x.ndim == 1: x = x[:, None]        # (N,) -> (N,1)
                 if y.ndim == 2 and y.shape[-1] == 1: y = y.squeeze(-1)  # (N,1)->(N,)
-                assert x.shape[0] == y.shape[0], "x and y must have same N"
+                _require(x.shape[0] == y.shape[0], "x and y must have same N")
                 N, p = x.shape
 
                 sigma_prior, mu_i, sd_i, beta_loc, beta_cov = init_vals
                 beta_loc = jnp.asarray(beta_loc); beta_cov = jnp.asarray(beta_cov)
-                assert beta_loc.shape == (p,), "slope_prior_mean must be (p,)"
-                assert beta_cov.shape == (p, p), "slope_prior_cov_mtx must be (p,p)"
+                _require(beta_loc.shape == (p,), "slope_prior_mean must be (p,)")
+                _require(beta_cov.shape == (p, p), "slope_prior_cov_mtx must be (p,p)")
 
                 sigma = numpyro.sample(f"{param_name}_sigma", dist.HalfCauchy(sigma_prior))                # scalar
                 intercept = numpyro.sample(f"{param_name}_Intercept", dist.Normal(mu_i, sd_i))             # scalar
@@ -324,22 +332,23 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                 x = jnp.asarray(x); y = jnp.asarray(y)
                 if x.ndim == 1: x = x[:, None]      # (N,) -> (N,1)
                 if y.ndim == 1: y = y[:, None]      # (N,) -> (N,1)
-                assert x.shape[0] == y.shape[0], "x and y must have same N"
+                _require(x.shape[0] == y.shape[0], "x and y must have same N")
                 N, p = x.shape; K = y.shape[1]
 
                 sigma_prior, alpha_loc, alpha_cov, B_loc, B_cov = init_vals
                 alpha_loc = jnp.asarray(alpha_loc); alpha_cov = jnp.asarray(alpha_cov)
                 B_loc = jnp.asarray(B_loc); B_cov = jnp.asarray(B_cov)
 
-                assert alpha_loc.shape == (K,), "intercept_prior_mean must be (K,)"
-                assert alpha_cov.shape == (K, K), "intercept_prior_cov_mtx must be (K,K)"
+                _require(alpha_loc.shape == (K,), "intercept_prior_mean must be (K,)")
+                _require(alpha_cov.shape == (K, K), "intercept_prior_cov_mtx must be (K,K)")
                 if B_loc.shape == (p, K):
                     B_loc_vec = B_loc.reshape(-1)
                 else:
-                    assert B_loc.shape == (p * K,), "slope_prior_mean must be (p,K) or (p*K,)"
+                    _require(B_loc.shape == (p * K,), "slope_prior_mean must be (p,K) or (p*K,)")
                     B_loc_vec = B_loc
-                assert B_cov.shape == (p * K, p * K), "slope_prior_cov_mtx must be (p*K,p*K)"
-                sigma_prior = jnp.asarray(sigma_prior); assert sigma_prior.shape == (K,), "sigma_prior must be (K,)"
+                _require(B_cov.shape == (p * K, p * K), "slope_prior_cov_mtx must be (p*K,p*K)")
+                sigma_prior = jnp.asarray(sigma_prior)
+                _require(sigma_prior.shape == (K,), "sigma_prior must be (K,)")
 
                 # α ~ MVN
                 alpha = numpyro.sample(f"{param_name}_Intercept",
@@ -444,9 +453,9 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                     (mu_i, sd_i) = init_vals['Intercept']
                     (mu_b, sd_b) = init_vals['slope']
                 else:
-                    assert len(init_vals) == 6, (
+                    _require(len(init_vals) == 6, (
                         "For 'linreg' guide, init_vals must be (mu_s, sd_s, mu_i, sd_i, mu_b, sd_b)"
-                    )
+                    ))
                     mu_s, sd_s, mu_i, sd_i, mu_b, sd_b = init_vals
 
                 # Positive support for sigma
@@ -496,16 +505,20 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                 B_loc = jnp.asarray(B_loc); B_cov = jnp.asarray(B_cov)
                 sigma_post = jnp.asarray(sigma_post); sigma_cov = jnp.asarray(sigma_cov)
 
-                assert alpha_loc.shape == (K,), "intercept_post must be (K,)"
-                assert alpha_cov.shape == (K, K), "intercept_cov must be (K,K)"
+                _require(alpha_loc.shape == (K,), "intercept_post must be (K,)")
+                _require(alpha_cov.shape == (K, K), "intercept_cov must be (K,K)")
                 if B_loc.ndim == 2:
-                    p = B_loc.shape[0]; assert B_loc.shape[1] == K, "slope_post must be (p,K) or (p*K,)"
+                    p = B_loc.shape[0]
+                    _require(B_loc.shape[1] == K, "slope_post must be (p,K) or (p*K,)")
                     B_loc_vec = B_loc.reshape(-1)
                 else:
                     B_loc_vec = B_loc
-                    pK = B_loc_vec.shape[0]; assert B_cov.shape == (pK, pK), "slope_cov must be (p*K,p*K)"
-                assert sigma_post.shape[0] == Ldim and sigma_cov.shape == (Ldim, Ldim), \
-                    "sigma_post must be len K(K+1)/2 and sigma_cov shape (Ldim,Ldim)"
+                    pK = B_loc_vec.shape[0]
+                    _require(B_cov.shape == (pK, pK), "slope_cov must be (p*K,p*K)")
+                _require(
+                    sigma_post.shape[0] == Ldim and sigma_cov.shape == (Ldim, Ldim),
+                    "sigma_post must be len K(K+1)/2 and sigma_cov shape (Ldim,Ldim)",
+                )
 
                 # α ~ MVN
                 numpyro.sample(f"{param_name}_Intercept",
@@ -571,7 +584,7 @@ def compute_elbo(model_str, guide_str, param_name, model_vals, guide_vals, data=
     """ 
     elbo = TraceMeanField_ELBO(num_particles=grad_samps)
     if with_data:
-        assert data is not None, "Data must be provided for data-dependent models."
+        _require(data is not None, "Data must be provided for data-dependent models.")
         model = construct_model(model_str, param_name, model_vals, with_data=True)
         try:
             guide = construct_model(guide_str, param_name, guide_vals, with_data=False)
@@ -587,6 +600,10 @@ def compute_elbo(model_str, guide_str, param_name, model_vals, guide_vals, data=
 
 def pdf_from_str(dist_str, params):
     # needs to return a class with a log_prob and sample method
+    if elbo_dist_class is None:
+        raise ImportError(
+            "pdf_from_str requires the optional bakeoff package, which is not installed."
+        )
     return elbo_dist_class(dist_str, params)
     
 

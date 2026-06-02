@@ -13,6 +13,22 @@ def _iteration_x(n_iters, iteration_stride=1):
     return (np.arange(n_iters) + 1) * iteration_stride
 
 
+def _resolve_dim_name(dim, dim_to_name=None, param_name="param"):
+    """
+    Resolve a plotted dimension to a human-readable parameter label.
+
+    Existing notebooks that do not pass dim_to_name keep the historical
+    param_name_dimN fallback, while richer models can pass {dim: label}.
+    """
+    if dim_to_name is not None:
+        if dim in dim_to_name:
+            return str(dim_to_name[dim])
+        dim_str = str(dim)
+        if dim_str in dim_to_name:
+            return str(dim_to_name[dim_str])
+    return f"{param_name}_dim{dim}"
+
+
 def plot_a_few_trajectories_1d(
         single_tracker, multi_tracker,
         best_mu, best_std, param_name, k=2,
@@ -66,7 +82,7 @@ def plot_a_few_trajectories_1d(
         axs[0].axhline(best_std * 0.8, color='grey', linestyle=':', label=None)
         axs[0].axhline(best_std * 1.3, color='grey', linestyle=':', label=None)
         axs[0].axhline(best_std * 0.7, color='grey', linestyle=':', label=None)
-    axs[0].set_title(label_prefix + r'Variational Approximation of $\sigma_p$ (Posterior Std of ' + param_name + '): a few runs')
+    axs[0].set_title(label_prefix + "Posterior std of " + param_name + ": selected restarts")
     axs[0].set_xlabel('Iteration')
     axs[0].set_ylabel(r'$\sigma_p$')
     axs[0].grid()
@@ -87,7 +103,7 @@ def plot_a_few_trajectories_1d(
         axs[1].axhline(best_mu - 2 * best_std, color='grey', linestyle=':', label=None)
         axs[1].axhline(best_mu + 3 * best_std, color='grey', linestyle=':', label=None)
         axs[1].axhline(best_mu - 3 * best_std, color='grey', linestyle=':', label=None)
-    axs[1].set_title(label_prefix + r'Variational Approximation of $\mu_p$ (Posterior Mean of ' + param_name + '): a few runs')
+    axs[1].set_title(label_prefix + "Posterior mean of " + param_name + ": selected restarts")
     axs[1].set_xlabel('Iteration')
     axs[1].set_ylabel(r'$\mu_p$')
     axs[1].grid()
@@ -122,7 +138,8 @@ def plot_mean_band(ax, x, Y, best_value, title, ylabel, WITH_STDS=False, STD=Non
     ax.axhline(best_value, color='red', linestyle='--', label='Best value')
     if WITH_STDS:
         if ylabel==r'$\mu_p$':
-            assert STD is not None, "we need to provide the best std if we're plotting the mean plot with stds"
+            if STD is None:
+                raise ValueError("we need to provide the best std if we're plotting the mean plot with stds")
             ax.axhline(best_value - STD, color='grey', linestyle=':', label=r'$\pm1,2,3$ best std')
             ax.axhline(best_value + STD, color='grey', linestyle=':', label=None)
             ax.axhline(best_value - 2 * STD, color='grey', linestyle=':', label=None)
@@ -148,13 +165,18 @@ def plot_mean_band_rrs_1d(
         xlim = None, ylim_std = None, ylim_mean = None, WITH_STDS = False,
         limit_around_reference=True, WHICH_STDS=[1]):
     
-    def legend_label(mu_or_sig=r"$\sigma_p$"):
+    def plot_title(summary_name):
         if WITH_STDS:
             STD_STRING = r" $\pm$ " + ", ".join([str(x) for x in WHICH_STDS]) + " SD"
         else:
-            STD_STRING = None
-        label = label_prefix + '{} MC samples: '.format(n_mc_samps) + mu_or_sig + ' for ' + param_name + ' trajectory' + STD_STRING + ' across runs'
-        return label
+            STD_STRING = ""
+        return (
+            label_prefix
+            + f"{n_mc_samps} MC samples: posterior {summary_name} of "
+            + param_name
+            + STD_STRING
+            + " across restarts"
+        )
 
     
 
@@ -163,7 +185,7 @@ def plot_mean_band_rrs_1d(
     fig, axs = plt.subplots(2, 1, figsize=(12, 14))
     plot_mean_band(
         axs[0], x, traj_stds, best_std,
-        legend_label(r"$\sigma_p$"), r'$\sigma_p$',
+        plot_title("std"), r'$\sigma_p$',
         WITH_STDS=WITH_STDS, STD=best_std,
         WHICH_STDS=WHICH_STDS
     )
@@ -174,7 +196,7 @@ def plot_mean_band_rrs_1d(
     
     plot_mean_band(
         axs[1], x, traj_means, best_mu,
-        legend_label(r"$\mu_p$"), r'$\mu_p$',
+        plot_title("mean"), r'$\mu_p$',
         WITH_STDS=WITH_STDS, STD=best_std,
         WHICH_STDS=WHICH_STDS
     )
@@ -209,29 +231,33 @@ def plot_some_dims_multid(
         single_means, single_stds, multi_means, multi_stds,
         best_mus, best_stds, param_name, dim,
         which_dims=None, k=2, label_prefix = "", N = None, WITH_STDS = False,
-        iteration_stride=1, limit_around_reference=True): 
+        iteration_stride=1, limit_around_reference=True,
+        WHICH_STDS=[1], dim_to_name=None):
     if which_dims is None:
         np.random.seed(0)
         which_dims = np.random.choice(dim, size=min(dim, k), replace=False)
     x = _iteration_x(single_means.shape[1], iteration_stride=iteration_stride)
     for d in which_dims:
+        dim_label = _resolve_dim_name(d, dim_to_name=dim_to_name, param_name=param_name)
         plot_a_few_trajectories_1d(
             [single_means[:, :, d], single_stds[:, :, d]], [multi_means[:, :, d], multi_stds[:, :, d]],
-            best_mus[d], best_stds[d], param_name + "_dim" + str(d),
+            best_mus[d], best_stds[d], dim_label,
             k=k, label_prefix=label_prefix, N=N, WITH_STDS=WITH_STDS,
-            x=x, limit_around_reference=limit_around_reference
+            x=x, limit_around_reference=limit_around_reference,
         )
         plot_mean_band_rrs_1d(
             single_means[:, :, d], single_stds[:, :, d],
             best_mus[d], best_stds[d], x,
-            param_name + "_dim" + str(d), n_mc_samps=1, label_prefix=label_prefix,
-            WITH_STDS=WITH_STDS, limit_around_reference=limit_around_reference
+            dim_label, n_mc_samps=1, label_prefix=label_prefix,
+            WITH_STDS=WITH_STDS, limit_around_reference=limit_around_reference,
+            WHICH_STDS=WHICH_STDS
         )
         plot_mean_band_rrs_1d(
             multi_means[:, :, d], multi_stds[:, :, d],
             best_mus[d], best_stds[d], x,
-            param_name + "_dim" + str(d), n_mc_samps=100, label_prefix=label_prefix,
-            WITH_STDS=WITH_STDS, limit_around_reference=limit_around_reference
+            dim_label, n_mc_samps=100, label_prefix=label_prefix,
+            WITH_STDS=WITH_STDS, limit_around_reference=limit_around_reference,
+            WHICH_STDS=WHICH_STDS
         )
 
 
@@ -252,7 +278,8 @@ less tested below
 def plot_simplex_dims(
         single_means, single_stds, multi_means, multi_stds,
         best_mean, best_cov, param_name=r'$\theta$',
-        which_dims=None, k=2, label_prefix="", N=None, WITH_STDS=False):
+        which_dims=None, k=2, label_prefix="", N=None, WITH_STDS=False,
+        dim_to_name=None):
     best_mean = np.asarray(best_mean, dtype=float)
     best_cov = np.asarray(best_cov, dtype=float)
     best_std = np.sqrt(np.clip(np.diag(best_cov), 0.0, None))
@@ -261,7 +288,7 @@ def plot_simplex_dims(
         single_means, single_stds, multi_means, multi_stds,
         best_mean, best_std, param_name, dim=len(best_mean),
         which_dims=which_dims, k=k, label_prefix=label_prefix, N=N,
-        WITH_STDS=WITH_STDS
+        WITH_STDS=WITH_STDS, dim_to_name=dim_to_name
     )
 
 from scipy.stats import beta, norm

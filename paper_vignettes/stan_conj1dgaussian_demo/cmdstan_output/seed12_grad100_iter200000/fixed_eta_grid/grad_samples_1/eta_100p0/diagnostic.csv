@@ -1,0 +1,53 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 200000
+#     grad_samples = 1 (Default)
+#     elbo_samples = 100 (Default)
+#     eta = 100
+#     adapt
+#       engaged = false
+#       iter = 50 (Default)
+#     tol_rel_obj = 1e-16
+#     eval_elbo = 10000
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter200000/stan_data.json
+# init = 2 (Default)
+# random
+#   seed = 12
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter200000/fixed_eta_grid/grad_samples_1/eta_100p0/output.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter200000/fixed_eta_grid/grad_samples_1/eta_100p0/diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+10000,0.006,-150.29521
+20000,0.013,-156.61551
+30000,0.02,-149.06837
+40000,0.027,-147.55112
+50000,0.034,-147.49923
+60000,0.041,-148.76609
+70000,0.048,-147.97153
+80000,0.055,-147.50155
+90000,0.063,-147.53305
+100000,0.07,-147.69007
+110000,0.077,-148.31014
+120000,0.084,-150.77369
+130000,0.091,-147.28855
+140000,0.098,-148.08191
+150000,0.105,-150.88709
+160000,0.112,-147.48719
+170000,0.12,-152.33275
+180000,0.127,-148.1799
+190000,0.134,-150.39893
+200000,0.141,-148.43466

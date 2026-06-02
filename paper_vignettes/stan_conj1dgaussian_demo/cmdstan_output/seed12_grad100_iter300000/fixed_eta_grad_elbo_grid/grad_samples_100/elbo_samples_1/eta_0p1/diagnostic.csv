@@ -1,0 +1,63 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 300000
+#     grad_samples = 100
+#     elbo_samples = 1
+#     eta = 0.1
+#     adapt
+#       engaged = false
+#       iter = 50 (Default)
+#     tol_rel_obj = 1e-16
+#     eval_elbo = 10000
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/stan_data.json
+# init = 2 (Default)
+# random
+#   seed = 12
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_100/elbo_samples_1/eta_0p1/output.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_100/elbo_samples_1/eta_0p1/diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+10000,0.219,-146.94983
+20000,0.439,-147.07036
+30000,0.66,-146.857
+40000,0.881,-147.66779
+50000,1.098,-147.2878
+60000,1.317,-146.94097
+70000,1.544,-147.32338
+80000,1.769,-146.93312
+90000,1.986,-146.85205
+100000,2.209,-149.19133
+110000,2.429,-147.4528
+120000,2.649,-147.17904
+130000,2.868,-146.83544
+140000,3.087,-147.19378
+150000,3.307,-147.43237
+160000,3.529,-146.90907
+170000,3.749,-146.88481
+180000,3.976,-148.59234
+190000,4.196,-146.94119
+200000,4.419,-147.47432
+210000,4.643,-147.01918
+220000,4.863,-148.61345
+230000,5.082,-147.68949
+240000,5.3,-146.84094
+250000,5.52,-146.90342
+260000,5.742,-147.43524
+270000,5.959,-146.84374
+280000,6.178,-147.71461
+290000,6.4,-146.88374
+300000,6.744,-147.25884

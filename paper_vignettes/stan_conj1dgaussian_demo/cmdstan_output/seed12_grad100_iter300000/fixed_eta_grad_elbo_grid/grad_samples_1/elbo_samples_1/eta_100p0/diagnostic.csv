@@ -1,0 +1,63 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 300000
+#     grad_samples = 1 (Default)
+#     elbo_samples = 1
+#     eta = 100
+#     adapt
+#       engaged = false
+#       iter = 50 (Default)
+#     tol_rel_obj = 1e-16
+#     eval_elbo = 10000
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/stan_data.json
+# init = 2 (Default)
+# random
+#   seed = 12
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_1/elbo_samples_1/eta_100p0/output.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_1/elbo_samples_1/eta_100p0/diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+10000,0.007,-151.85818
+20000,0.015,-154.32673
+30000,0.022,-148.20323
+40000,0.03,-148.30206
+50000,0.037,-146.89347
+60000,0.045,-152.44129
+70000,0.052,-146.71613
+80000,0.06,-147.98483
+90000,0.067,-148.40839
+100000,0.075,-148.95792
+110000,0.082,-146.83307
+120000,0.09,-147.47845
+130000,0.098,-147.25937
+140000,0.105,-147.48086
+150000,0.113,-156.44613
+160000,0.121,-151.88157
+170000,0.129,-147.84083
+180000,0.136,-146.63253
+190000,0.144,-147.59629
+200000,0.152,-147.06273
+210000,0.159,-148.69719
+220000,0.167,-147.65714
+230000,0.174,-147.18848
+240000,0.182,-149.43369
+250000,0.189,-146.53429
+260000,0.197,-147.49996
+270000,0.205,-146.6176
+280000,0.212,-149.84645
+290000,0.22,-147.55572
+300000,0.227,-146.59421

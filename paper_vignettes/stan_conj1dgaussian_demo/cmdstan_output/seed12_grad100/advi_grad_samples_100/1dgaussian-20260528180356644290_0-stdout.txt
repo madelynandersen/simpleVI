@@ -1,0 +1,84 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 10000 (Default)
+    grad_samples = 100
+    elbo_samples = 100 (Default)
+    eta = 1 (Default)
+    adapt
+      engaged = true (Default)
+      iter = 50 (Default)
+    tol_rel_obj = 0.01 (Default)
+    eval_elbo = 100 (Default)
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = /var/folders/k_/lm3f3ty933bgx8bfm0dsx7cr0000gn/T/tmp4wjca_hu/6rl3jivl.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/advi_grad_samples_100/1dgaussian-20260528180356644290.csv
+  diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/advi_grad_samples_100/1dgaussian-20260528180356644290-diagnostic.csv
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 4e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
+Adjust your expectations accordingly!
+
+
+Begin eta adaptation.
+Iteration:   1 / 250 [  0%]  (Adaptation)
+Iteration:  50 / 250 [ 20%]  (Adaptation)
+Iteration: 100 / 250 [ 40%]  (Adaptation)
+Success! Found best value [eta = 100] earlier than expected.
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+   100       -11745.147             1.000            1.000
+   200         -165.520            35.480           69.959
+   300         -380.416            23.841            1.000
+   400         -467.023            17.927            1.000
+   500         -408.577            14.370            0.565
+   600         -368.486            11.994            0.565
+   700         -329.502            10.297            0.185
+   800         -310.364             9.018            0.185
+   900         -289.359             8.024            0.143
+  1000         -261.024             7.232            0.143
+  1100         -261.969             7.133            0.118   MAY BE DIVERGING... INSPECT ELBO
+  1200         -256.398             0.139            0.109
+  1300         -243.971             0.087            0.109
+  1400         -233.675             0.073            0.073
+  1500         -227.018             0.062            0.062
+  1600         -222.079             0.053            0.051
+  1700         -217.902             0.043            0.044
+  1800         -215.309             0.038            0.029
+  1900         -211.809             0.033            0.022
+  2000         -213.206             0.023            0.022
+  2100         -190.784             0.034            0.022
+  2200         -204.893             0.039            0.029
+  2300         -204.544             0.034            0.022
+  2400         -203.115             0.030            0.019
+  2500         -193.691             0.032            0.019
+  2600         -194.096             0.030            0.017
+  2700         -195.484             0.029            0.012
+  2800         -192.925             0.029            0.013
+  2900         -192.080             0.028            0.007   MEDIAN ELBO CONVERGED
+Informational Message: The ELBO at a previous iteration is larger than the ELBO upon convergence!
+This variational approximation may not have converged to a good optimum.
+
+Drawing a sample of size 1000 from the approximate posterior... 
+COMPLETED.

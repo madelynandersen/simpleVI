@@ -1,0 +1,149 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 10000 (Default)
+    grad_samples = 1 (Default)
+    elbo_samples = 100 (Default)
+    eta = 0.01
+    adapt
+      engaged = false
+      iter = 50 (Default)
+    tol_rel_obj = 0.01 (Default)
+    eval_elbo = 100 (Default)
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/stan_data.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_1/eta_0p01/output.csv
+  diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_1/eta_0p01/diagnostic.csv
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 3e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+Adjust your expectations accordingly!
+
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+   100         -465.307             1.000            1.000
+   200         -501.825             0.536            1.000
+   300         -427.723             0.415            0.173
+   400         -456.633             0.327            0.173
+   500         -456.620             0.262            0.073
+   600         -424.953             0.231            0.075
+   700         -402.230             0.206            0.073
+   800         -414.321             0.184            0.073
+   900         -427.734             0.167            0.063
+  1000         -432.613             0.151            0.063
+  1100         -363.939             0.070            0.063
+  1200         -396.563             0.071            0.063
+  1300         -384.702             0.057            0.056
+  1400         -371.894             0.054            0.034
+  1500         -379.957             0.056            0.034
+  1600         -377.119             0.049            0.031
+  1700         -373.001             0.045            0.031
+  1800         -369.254             0.043            0.031
+  1900         -353.740             0.044            0.031
+  2000         -357.386             0.044            0.031
+  2100         -321.278             0.036            0.031
+  2200         -351.709             0.037            0.031
+  2300         -329.184             0.041            0.034
+  2400         -330.973             0.038            0.021
+  2500         -331.190             0.036            0.011
+  2600         -315.985             0.040            0.044
+  2700         -324.217             0.041            0.044
+  2800         -318.076             0.042            0.044
+  2900         -309.836             0.040            0.027
+  3000         -298.425             0.043            0.038
+  3100         -328.411             0.041            0.038
+  3200         -292.819             0.044            0.038
+  3300         -315.051             0.045            0.038
+  3400         -296.428             0.050            0.048
+  3500         -298.299             0.051            0.048
+  3600         -290.132             0.049            0.038
+  3700         -291.196             0.047            0.038
+  3800         -301.371             0.048            0.038
+  3900         -280.587             0.053            0.063
+  4000         -299.406             0.056            0.063
+  4100         -282.178             0.052            0.063
+  4200         -298.019             0.046            0.061
+  4300         -266.485             0.050            0.061
+  4400         -267.648             0.045            0.053
+  4500         -280.933             0.049            0.053
+  4600         -257.190             0.055            0.061
+  4700         -277.143             0.062            0.063
+  4800         -263.726             0.064            0.063
+  4900         -279.278             0.062            0.061
+  5000         -257.605             0.064            0.061
+  5100         -255.950             0.058            0.056
+  5200         -258.888             0.054            0.056
+  5300         -260.597             0.043            0.051
+  5400         -259.403             0.043            0.051
+  5500         -252.106             0.041            0.051
+  5600         -258.422             0.035            0.029
+  5700         -264.250             0.030            0.024
+  5800         -240.844             0.034            0.024
+  5900         -256.857             0.035            0.024
+  6000         -239.730             0.034            0.024
+  6100         -237.741             0.034            0.024
+  6200         -240.523             0.034            0.024
+  6300         -252.319             0.038            0.029
+  6400         -242.197             0.041            0.042
+  6500         -228.839             0.044            0.047
+  6600         -246.915             0.049            0.058
+  6700         -235.288             0.052            0.058
+  6800         -250.798             0.049            0.058
+  6900         -236.144             0.048            0.058
+  7000         -226.660             0.046            0.049
+  7100         -236.060             0.049            0.049
+  7200         -229.206             0.050            0.049
+  7300         -225.087             0.048            0.049
+  7400         -218.734             0.046            0.049
+  7500         -217.388             0.041            0.042
+  7600         -225.916             0.038            0.040
+  7700         -225.693             0.033            0.038
+  7800         -231.636             0.029            0.030
+  7900         -212.994             0.032            0.030
+  8000         -215.759             0.029            0.029
+  8100         -224.430             0.029            0.029
+  8200         -218.216             0.029            0.028
+  8300         -206.659             0.032            0.029
+  8400         -216.162             0.034            0.038
+  8500         -206.511             0.038            0.039
+  8600         -210.520             0.036            0.039
+  8700         -214.522             0.038            0.039
+  8800         -200.743             0.042            0.044
+  8900         -218.148             0.041            0.044
+  9000         -209.362             0.044            0.044
+  9100         -197.608             0.046            0.047
+  9200         -193.101             0.046            0.047
+  9300         -198.311             0.043            0.044
+  9400         -197.440             0.039            0.042
+  9500         -201.025             0.036            0.026
+  9600         -200.470             0.034            0.026
+  9700         -202.693             0.034            0.026
+  9800         -199.833             0.028            0.023
+  9900         -202.435             0.021            0.018
+  10000         -199.681             0.019            0.014
+Informational Message: The maximum number of iterations is reached! The algorithm may not have converged.
+This variational approximation is not guaranteed to be meaningful.
+
+Drawing a sample of size 1000 from the approximate posterior... 
+COMPLETED.

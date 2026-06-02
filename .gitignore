@@ -48,6 +48,7 @@ coverage.xml
 
 # saved results
 single_MC/**/results/
+nt_*/
 
 
 # Jupyter Notebook

@@ -15,7 +15,7 @@ from modulars.radon import (
     load_radon_data,
     make_radon_unconstrained_param_names,
 )
-from modulars.utils import find_best_params
+from modulars.utils import find_best_params, repo_relative_path
 
 
 INPUT_SPECS = [
@@ -85,14 +85,15 @@ def _prepare_result_specs(base_dir, allow_missing, excluded_packages=None):
             continue
 
         if processed_path.exists():
+            relative_processed_path = repo_relative_path(processed_path)
             if processed_path.stat().st_size > MAX_PROCESSED_LOAD_BYTES:
                 reason = (
                     f"Processed restart file is too large to load safely "
-                    f"({processed_path.stat().st_size:,} bytes): {processed_path}. "
+                    f"({processed_path.stat().st_size:,} bytes): {relative_processed_path}. "
                     "Rerun the notebook with the current track_every=10 settings "
                     "to create the small final summary file."
                 )
-                skipped.append({**spec, "path": str(processed_path), "reason": reason})
+                skipped.append({**spec, "path": relative_processed_path, "reason": reason})
                 if allow_missing:
                     continue
                 raise ValueError(reason)
@@ -102,8 +103,8 @@ def _prepare_result_specs(base_dir, allow_missing, excluded_packages=None):
         missing.append(
             {
                 **spec,
-                "path": str(processed_path),
-                "summary_path": str(summary_path),
+                "path": repo_relative_path(processed_path),
+                "summary_path": repo_relative_path(summary_path),
             }
         )
 
@@ -354,8 +355,8 @@ def main():
         "best_restart_idx": int(best_info["restart_idx"]),
         "selection_score": float(best_info["best_elbo_np"]),
         "best_numpyro_elbo": float(best_info["best_elbo_np"]),
-        "output": str(output),
-        "diagnostics_output": str(diagnostics_output),
+        "output": repo_relative_path(output),
+        "diagnostics_output": repo_relative_path(diagnostics_output),
     }
     output.with_suffix(".metadata.json").write_text(json.dumps(metadata, indent=2))
 

@@ -1,10 +1,12 @@
 import gc
+import os
 
 import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
 import pytensor
-pytensor.config.cxx = '/usr/bin/clang++'
+if os.environ.get("SIMPLEVI_PYTENSOR_CXX"):
+    pytensor.config.cxx = os.environ["SIMPLEVI_PYTENSOR_CXX"]
 
 
 from pymc.logprob.transforms import Transform
@@ -63,8 +65,10 @@ def run_pymc_VI(
 
     optimizer can be 'default' (pymc's default) or 'adam' (pymc's adam)
     """
+    start = kwargs.pop("start", None)
+    start_sigma = kwargs.pop("start_sigma", None)
     np.random.seed(seed)
-    advi = pm.ADVI(model=model, random_seed=seed)
+    advi = pm.ADVI(model=model, random_seed=seed, start=start, start_sigma=start_sigma)
 
     if SINGLE_DIM:
         tracker = _ThinnedTracker(

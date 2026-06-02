@@ -1,0 +1,79 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 300000
+    grad_samples = 1 (Default)
+    elbo_samples = 1
+    eta = 0.01
+    adapt
+      engaged = false
+      iter = 50 (Default)
+    tol_rel_obj = 1e-16
+    eval_elbo = 10000
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/stan_data.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_1/elbo_samples_1/eta_0p01/output.csv
+  diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_1/elbo_samples_1/eta_0p01/diagnostic.csv
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 3e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+Adjust your expectations accordingly!
+
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+  10000         -148.244             1.000            1.000
+  20000         -170.987             0.567            1.000
+  30000         -145.879             0.435            0.172
+  40000         -148.109             0.107            0.133
+  50000         -147.055             0.065            0.015
+  60000         -146.363             0.009            0.007
+  70000         -147.121             0.006            0.005
+  80000         -148.026             0.005            0.005
+  90000         -149.353             0.007            0.006
+  100000         -147.418             0.009            0.009
+  110000         -146.722             0.009            0.009
+  120000         -147.382             0.007            0.005
+  130000         -146.864             0.004            0.004
+  140000         -146.732             0.003            0.004
+  150000         -148.512             0.005            0.004
+  160000         -147.006             0.008            0.010
+  170000         -146.950             0.008            0.010
+  180000         -146.824             0.004            0.001
+  190000         -147.394             0.002            0.001
+  200000         -148.115             0.003            0.004
+  210000         -146.862             0.006            0.005
+  220000         -146.792             0.005            0.005
+  230000         -146.793             0.003            0.000
+  240000         -147.015             0.001            0.000
+  250000         -146.796             0.001            0.001
+  260000         -148.147             0.004            0.002
+  270000         -146.842             0.006            0.009
+  280000         -147.679             0.008            0.009
+  290000         -147.080             0.006            0.006
+  300000         -146.823             0.004            0.004
+Informational Message: The maximum number of iterations is reached! The algorithm may not have converged.
+This variational approximation is not guaranteed to be meaningful.
+
+Drawing a sample of size 1000 from the approximate posterior... 
+COMPLETED.

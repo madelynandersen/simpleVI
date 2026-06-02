@@ -6,121 +6,121 @@
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 0,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 1,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 2,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 3,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 4,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 5,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 6,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 7,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 8,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "numpyro",
       "setting": "adam_100_mc",
       "restart_idx": 9,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/numpyro_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 0,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 1,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 2,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 3,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 4,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 5,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 6,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 7,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 8,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     },
     {
       "package": "tfp",
       "setting": "adam_100_mc",
       "restart_idx": 9,
-      "input_file": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
+      "input_file": "single_MC/radon_example/pymc_tutorial/results/tfp_final_restarts.csv"
     }
   ],
   "missing_inputs": [],
@@ -136,6 +136,6 @@
   "best_restart_idx": 4,
   "selection_score": -1062.5693359375,
   "best_numpyro_elbo": -1062.5693359375,
-  "output": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/best_reference_values_without_pymc.csv",
-  "diagnostics_output": "/Users/madelynandersen/Documents/VB Bakeoff/simpleVI/single_MC/radon_example/pymc_tutorial/best_reference_restarts_without_pymc.csv"
+  "output": "single_MC/radon_example/pymc_tutorial/best_reference_values_without_pymc.csv",
+  "diagnostics_output": "single_MC/radon_example/pymc_tutorial/best_reference_restarts_without_pymc.csv"
 }

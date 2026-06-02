@@ -1,0 +1,63 @@
+# stan_version_major = 2
+# stan_version_minor = 39
+# stan_version_patch = 0
+# model = tmpys6ezil1_model
+# method = variational
+#   variational
+#     algorithm = meanfield (Default)
+#       meanfield
+#     iter = 300000
+#     grad_samples = 1 (Default)
+#     elbo_samples = 100 (Default)
+#     eta = 1 (Default)
+#     adapt
+#       engaged = false
+#       iter = 50 (Default)
+#     tol_rel_obj = 1e-16
+#     eval_elbo = 10000
+#     output_samples = 1000 (Default)
+# id = 1 (Default)
+# data
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/stan_data.json
+# init = 2 (Default)
+# random
+#   seed = 12
+# output
+#   file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_1/elbo_samples_100/eta_1p0/output.csv
+#   diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100_iter300000/fixed_eta_grad_elbo_grid/grad_samples_1/elbo_samples_100/eta_1p0/diagnostic.csv
+#   refresh = 100 (Default)
+#   sig_figs = 8 (Default)
+#   profile_file = profile.csv (Default)
+#   save_cmdstan_config = false (Default)
+# num_threads = 1 (Default)
+# iter,time_in_seconds,ELBO
+10000,0.007,-147.34182
+20000,0.014,-147.27234
+30000,0.022,-147.31993
+40000,0.029,-147.51297
+50000,0.036,-147.31437
+60000,0.044,-147.36413
+70000,0.051,-147.43338
+80000,0.059,-147.39109
+90000,0.066,-147.33862
+100000,0.074,-147.37434
+110000,0.081,-147.47004
+120000,0.089,-147.34572
+130000,0.097,-147.20099
+140000,0.104,-147.22748
+150000,0.111,-147.28243
+160000,0.119,-147.54378
+170000,0.126,-147.29407
+180000,0.134,-147.16443
+190000,0.141,-147.3822
+200000,0.149,-147.31381
+210000,0.156,-147.31862
+220000,0.164,-147.41012
+230000,0.171,-147.34955
+240000,0.179,-147.41558
+250000,0.186,-147.31608
+260000,0.194,-147.43741
+270000,0.201,-147.43749
+280000,0.209,-147.32616
+290000,0.216,-147.28735
+300000,0.224,-147.32263

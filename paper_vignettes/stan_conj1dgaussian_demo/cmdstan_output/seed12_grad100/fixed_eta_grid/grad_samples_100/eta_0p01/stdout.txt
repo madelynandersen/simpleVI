@@ -1,0 +1,123 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 10000 (Default)
+    grad_samples = 100
+    elbo_samples = 100 (Default)
+    eta = 0.01
+    adapt
+      engaged = false
+      iter = 50 (Default)
+    tol_rel_obj = 0.01 (Default)
+    eval_elbo = 100 (Default)
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/stan_data.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_100/eta_0p01/output.csv
+  diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad100/fixed_eta_grid/grad_samples_100/eta_0p01/diagnostic.csv
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 3e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+Adjust your expectations accordingly!
+
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+   100         -496.909             1.000            1.000
+   200         -445.296             0.558            1.000
+   300         -433.304             0.381            0.116
+   400         -445.586             0.293            0.116
+   500         -415.807             0.249            0.072
+   600         -422.016             0.210            0.072
+   700         -375.515             0.197            0.072
+   800         -410.452             0.183            0.085
+   900         -384.152             0.171            0.072
+  1000         -364.260             0.159            0.072
+  1100         -357.959             0.061            0.068
+  1200         -362.194             0.050            0.055
+  1300         -354.453             0.050            0.055
+  1400         -347.319             0.049            0.055
+  1500         -328.784             0.047            0.055
+  1600         -329.292             0.046            0.055
+  1700         -335.145             0.036            0.022
+  1800         -326.945             0.030            0.022
+  1900         -313.870             0.027            0.022
+  2000         -311.432             0.022            0.021
+  2100         -319.613             0.023            0.022
+  2200         -297.804             0.029            0.025
+  2300         -306.453             0.030            0.026
+  2400         -311.093             0.029            0.026
+  2500         -302.964             0.026            0.026
+  2600         -299.161             0.027            0.026
+  2700         -295.746             0.027            0.026
+  2800         -294.966             0.025            0.026
+  2900         -280.037             0.026            0.026
+  3000         -284.596             0.027            0.026
+  3100         -281.610             0.025            0.016
+  3200         -275.396             0.020            0.016
+  3300         -267.253             0.020            0.016
+  3400         -275.173             0.022            0.023
+  3500         -267.186             0.022            0.023
+  3600         -268.909             0.021            0.023
+  3700         -265.385             0.021            0.023
+  3800         -269.103             0.023            0.023
+  3900         -255.019             0.023            0.023
+  4000         -253.548             0.022            0.023
+  4100         -249.101             0.022            0.023
+  4200         -243.986             0.022            0.021
+  4300         -240.469             0.021            0.018
+  4400         -246.801             0.020            0.018
+  4500         -244.009             0.019            0.015
+  4600         -240.788             0.019            0.015
+  4700         -245.256             0.020            0.018
+  4800         -237.182             0.022            0.018
+  4900         -235.474             0.017            0.018
+  5000         -230.203             0.019            0.018
+  5100         -228.632             0.018            0.018
+  5200         -223.242             0.018            0.018
+  5300         -223.413             0.016            0.018
+  5400         -229.097             0.016            0.018
+  5500         -221.066             0.019            0.023
+  5600         -218.665             0.019            0.023
+  5700         -222.996             0.019            0.023
+  5800         -219.531             0.017            0.019
+  5900         -221.489             0.017            0.019
+  6000         -213.479             0.019            0.019
+  6100         -216.076             0.019            0.019
+  6200         -209.344             0.020            0.019
+  6300         -213.654             0.022            0.020
+  6400         -211.209             0.020            0.019
+  6500         -207.907             0.018            0.016
+  6600         -204.272             0.019            0.018
+  6700         -204.133             0.017            0.016
+  6800         -206.447             0.017            0.016
+  6900         -202.068             0.018            0.018
+  7000         -200.366             0.015            0.016
+  7100         -200.510             0.014            0.016
+  7200         -196.571             0.013            0.016
+  7300         -196.740             0.011            0.012
+  7400         -194.040             0.011            0.014
+  7500         -194.972             0.010            0.011
+  7600         -198.445             0.010            0.011   MEAN ELBO CONVERGED
+
+Drawing a sample of size 1000 from the approximate posterior... 
+COMPLETED.

@@ -1,0 +1,56 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 10000 (Default)
+    grad_samples = 200
+    elbo_samples = 100 (Default)
+    eta = 1 (Default)
+    adapt
+      engaged = true (Default)
+      iter = 50 (Default)
+    tol_rel_obj = 0.01 (Default)
+    eval_elbo = 100 (Default)
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = /var/folders/k_/lm3f3ty933bgx8bfm0dsx7cr0000gn/T/tmp0t1b4ewy/s19qd60m.json
+init = 2 (Default)
+random
+  seed = 12
+output
+  file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad200/advi_grad_samples_200/1dgaussian-20260528175531887516.csv
+  diagnostic_file = /Users/madelynandersen/Documents/VB Bakeoff/simpleVI/paper_vignettes/stan_conj1dgaussian_demo/cmdstan_output/seed12_grad200/advi_grad_samples_200/1dgaussian-20260528175531887516-diagnostic.csv
+  refresh = 100 (Default)
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 3e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+Adjust your expectations accordingly!
+
+
+Begin eta adaptation.
+Iteration:   1 / 250 [  0%]  (Adaptation)
+Iteration:  50 / 250 [ 20%]  (Adaptation)
+Iteration: 100 / 250 [ 40%]  (Adaptation)
+Success! Found best value [eta = 100] earlier than expected.
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+   100      -130866.362             1.000            1.000
+   200      -130866.419             0.500            1.000
+   300      -130855.852             0.333            0.000   MEDIAN ELBO CONVERGED
+
+Drawing a sample of size 1000 from the approximate posterior... 
+COMPLETED.
