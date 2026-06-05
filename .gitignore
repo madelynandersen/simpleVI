@@ -23,6 +23,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.vscode/
 
 # PyInstaller
 *.manifest
@@ -49,6 +50,8 @@ coverage.xml
 # saved results
 single_MC/**/results/
 nt_*/
+modulars/bnp_species.py
+modulars/ridall_football.py
 
 
 # Jupyter Notebook

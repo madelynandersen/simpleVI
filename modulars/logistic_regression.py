@@ -179,6 +179,7 @@ def plot_logistic_regression_selected_coeffs(
     legend_ncol=2,
     legend_y=-0.28,
     subplot_hspace=None,
+    x=None,
 ):
     """
     we plot the coefficient trajectories in the same mean-band style as
@@ -201,11 +202,14 @@ def plot_logistic_regression_selected_coeffs(
     row_height = 4.8 if legend_below else 4.0
     fig, axs = plt.subplots(len(labels), 2, figsize=(16, row_height * len(labels)), squeeze=False)
 
-    iteration_stride = max(1, int(iteration_stride))
-    if iteration_stride == 1:
-        x = np.arange(single_means.shape[1])
+    if x is None:
+        iteration_stride = max(1, int(iteration_stride))
+        if iteration_stride == 1:
+            x = np.arange(single_means.shape[1])
+        else:
+            x = (np.arange(single_means.shape[1]) + 1) * iteration_stride
     else:
-        x = (np.arange(single_means.shape[1]) + 1) * iteration_stride
+        x = np.asarray(x)
 
     for dim, label in enumerate(labels):
         mean_refs = []
@@ -306,6 +310,7 @@ def plot_logistic_regression_selected_coeffs_zoomed(
     std_window=(0.6, 1.6),
     iteration_stride=1,
     legend_ncol=2,
+    x=None,
 ):
     """
     Plot selected logistic-regression coefficients with the same
@@ -321,6 +326,7 @@ def plot_logistic_regression_selected_coeffs_zoomed(
         reference_means=reference_means,
         reference_stds=reference_stds,
         iteration_stride=iteration_stride,
+        x=x,
         reference_window=True,
         mean_window_sd=mean_window_sd,
         std_window=std_window,

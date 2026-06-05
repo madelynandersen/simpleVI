@@ -166,3 +166,40 @@ def lda_posterior_shared_theta(observations, alpha, *args, **kwargs):
         'alpha_post': alpha_N
     }
     return results
+
+
+
+"""
+Other helper functions for computing posteriors in the paper vignette notebooks for gaussian 1d known variance cases
+
+they all default to a unit normal as the prior.
+"""
+# compute rho from std for the gaussian 1d known variance case, since we parameterize in terms of rho but want to plot in terms of std dev
+from modulars.utils import softplus, inv_softplus
+from scipy.special import expit
+
+def rho_from_std(std_trace): 
+    return np.log(np.expm1(np.clip(np.asarray(std_trace, dtype=float), 1e-12, None)))
+
+# since we have to convert back and forth between rho and sigma for the gaussian 1d known variance case, we can just compute the kl divergence in terms of sigma instead of rho to avoid having to convert back and forth when plotting contours in sigma space
+def exact_kl(mu, rho, mu_p=0.0, sigma_p=1.0):
+    sigma = softplus(rho)
+    return np.log(sigma_p / sigma) + (sigma**2 + (mu - mu_p) ** 2) / (2.0 * sigma_p**2) - 0.5
+
+def exact_kl_sigma(mu, sigma, mu_p=0.0, sigma_p=1.0):
+    # same as exact_kl but with sigma instead of rho, so we don't have to convert back and forth when plotting contours in sigma space
+    sigma = np.asarray(sigma)
+    return np.log(sigma_p / sigma) + (sigma**2 + (mu - mu_p) ** 2) / (2.0 * sigma_p**2) - 0.5
+
+# compute the gradient of the kl divergence with respect to mu and rho, since we parameterize in terms of rho but want to plot in terms of std dev
+def exact_grad(mu, rho, mu_p=0.0, sigma_p=1.0):
+    sigma = softplus(rho)
+    ds_drho = expit(rho)
+    g_mu = (mu - mu_p) / sigma_p**2
+    g_sigma = -1.0 / sigma + sigma / sigma_p**2
+    g_rho = g_sigma * ds_drho
+    return np.array([g_mu, g_rho])
+
+def exact_g_rho_from_sigma(sigma, mu_p=0.0, sigma_p=1.0):
+    """Evaluate the exact KL rho-gradient at a chosen sigma value."""
+    return float(exact_grad(0.0, inv_softplus(float(sigma)))[1], mu_p=mu_p, sigma_p=sigma_p)

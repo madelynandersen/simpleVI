@@ -1,6 +1,8 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+import numpy as np
+
 tfd = tfp.distributions
 tfb = tfp.bijectors
 
@@ -321,3 +323,44 @@ def tfp_run_restart_simplex(
     )
 
     return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles)
+
+
+def make_conditioned_lp(prior_dist, likelihood_dist, x, multivar=False):
+    if multivar:
+        if type(x) is not int and (x is None or len(x) == 0):
+            return lambda z: prior_dist.log_prob(z)
+        else:
+            def log_prob_fn(z):
+                # z: (sample_size, n_dims)
+                # x: (n_data, n_dims)
+                z_exp = tf.expand_dims(z, 1)        # (sample_size, 1, n_dims)
+                x_exp = tf.expand_dims(x, 0)        # (1, n_data, n_dims)
+                lp = prior_dist.log_prob(z)         # (sample_size,)
+                # Sum log-likelihood over all data points for each z
+                lp += tf.reduce_sum(likelihood_dist(z_exp).log_prob(x_exp), axis=-1)  # (sample_size,)
+                return lp
+            return log_prob_fn
+    else:
+        if type(x) is not int and (x is None or len(x) == 0):
+            return lambda z: prior_dist.log_prob(z)
+        else:
+            def log_prob_fn(z):
+                # z: (sample_size,)
+                # x: (n_data,)
+                z_exp = tf.expand_dims(z, -1)        # (sample_size, 1)
+                x_exp = tf.expand_dims(x, 0)         # (1, n_data)
+                lp = prior_dist.log_prob(z)          # (sample_size,)
+                lp += tf.reduce_sum(likelihood_dist(z_exp).log_prob(x_exp), axis=-1)  # (sample_size,)
+                return lp
+            return log_prob_fn
+
+
+def make_tf_variable(name, initial_value, dtype=tf.float32):
+    return tf.Variable(initial_value, dtype=dtype, name=name)
+
+
+def make_trace_fn(surrogate):
+    def trace_fn(traceable_quantities):
+        return surrogate.mean(), surrogate.stddev(), traceable_quantities.loss
+    return trace_fn
+    

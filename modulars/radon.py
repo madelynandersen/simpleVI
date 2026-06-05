@@ -500,6 +500,7 @@ def plot_radon_selected_dims(
     legend_ncol=2,
     legend_y=-0.28,
     subplot_hspace=None,
+    x=None,
 ):
     """Plot radon VI mean/std trajectories for a small set of labeled dimensions."""
     import matplotlib.pyplot as plt
@@ -512,11 +513,14 @@ def plot_radon_selected_dims(
     n_rows = len(dims)
     row_height = 4.8 if legend_below else 4.0
     fig, axs = plt.subplots(n_rows, 2, figsize=(16, row_height * n_rows), squeeze=False)
-    iteration_stride = max(1, int(iteration_stride))
-    if iteration_stride == 1:
-        x = np.arange(single_means.shape[1])
+    if x is None:
+        iteration_stride = max(1, int(iteration_stride))
+        if iteration_stride == 1:
+            x = np.arange(single_means.shape[1])
+        else:
+            x = (np.arange(single_means.shape[1]) + 1) * iteration_stride
     else:
-        x = (np.arange(single_means.shape[1]) + 1) * iteration_stride
+        x = np.asarray(x)
 
     for row, (dim, label) in enumerate(zip(dims, labels)):
         mean_refs = []
@@ -622,6 +626,7 @@ def plot_radon_selected_dims_zoomed(
     mean_window_sd=3.0,
     std_window=(0.6, 1.6),
     legend_ncol=2,
+    x=None,
 ):
     """
     Plot selected radon dimensions with the same reference-window zoom used by
@@ -639,6 +644,7 @@ def plot_radon_selected_dims_zoomed(
         reference_means=reference_means,
         reference_stds=reference_stds,
         iteration_stride=iteration_stride,
+        x=x,
         reference_window=True,
         mean_window_sd=mean_window_sd,
         std_window=std_window,

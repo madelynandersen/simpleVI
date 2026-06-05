@@ -1227,3 +1227,12 @@ def latent_diag_diagnostic(theta_draws, title_prefix):
 
     fig.colorbar(im1, ax=axes.ravel().tolist(), shrink=0.85)
     plt.show()
+
+
+"""
+Helper functions for math in 1d_gaussian_no_obs_advi_optimizer_space.ipynb
+"""
+def softplus(x): return np.logaddexp(0.0, np.asarray(x, dtype=float))
+
+def inv_softplus(y): return np.asarray(y, dtype=float) + np.log(-np.expm1(-y))
+

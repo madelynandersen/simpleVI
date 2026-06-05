@@ -13,6 +13,16 @@ try:
 except ModuleNotFoundError:
     # TFP not in this environment
     pass
+try:
+    from .stan_rr_test import (
+        run_stan_random_restarts,
+        stan_result_tuple,
+        stan_vector_columns,
+        tracked_iterations,
+    )
+except ModuleNotFoundError:
+    # CmdStanPy not in this environment
+    pass
 from .plot_rr import plot_a_few_trajectories_1d, plot_mean_band, plot_mean_band_rrs_1d
 from .utils import *
 from .distributions import *
