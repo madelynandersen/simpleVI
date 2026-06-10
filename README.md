@@ -54,5 +54,5 @@ For examples and vignettes, including those demonstrated in our manuscript, you 
 
 For an example of a random restart analysis, we encourage you to look at the [PyMC restart analysis of a 1d conjugate Gaussian with known variance](single_MC/1dgaussian_knownvar/random_restarts/rr_pymc.ipynb), the [NumPyro restart analysis of a 1d conjugate Gaussian with known variance](single_MC/1dgaussian_knownvar/random_restarts/rr_numpyro.ipynb), the [TFP restart analysis of a 1d conjugate Gaussian with known variance](single_MC/1dgaussian_knownvar/random_restarts/rr_tfp.ipynb), the [Pyro restart analysis of a 1d conjugate Gaussian with known variance](single_MC/1dgaussian_knownvar/random_restarts/rr_pyro.ipynb), or the [Stan restart analysis of a 1d conjugate Gaussian with known variance.](single_MC/1dgaussian_knownvar/random_restarts/rr_stan.ipynb)
 
-Other experiments we ran may be found in the [experiments folder single_MC](single_MC)
+Other experiments we ran may be found in the [experiments folder single_MC](single_MC).
 
