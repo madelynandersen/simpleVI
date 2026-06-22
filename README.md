@@ -42,9 +42,8 @@ To learn how to use our modular components, we recommend selecting an experiment
 ## Examples and Vignettes
 
 For examples and vignettes, including those demonstrated in our manuscript, you may consider the following notebooks:
-- [An example analysis notebook](paper_vignettes/example_analysis.ipynb)
--[Manuscript section 3.1: Figure showing the uncertainty bias produced by the default settings in PyMC, shown in a 1d gaussian with known variance](single_MC/1dgaussian_knownvar
-/3_1_pymc.ipynb) (Note that this notebook is 300k iterations, while the manuscript demonstrates 3 million iterations. The manuscript's figure may be recreated by changing the number of iterations.)
+- [An example analysis notebook of tracking parameters in constrained vs unconstrained space](paper_vignettes/example_analysis.ipynb)
+- [Manuscript section 3.1: Figure showing the uncertainty bias produced by the default settings in PyMC, shown in a 1d gaussian with known variance](single_MC/1dgaussian_knownvar/3_1_pymc.ipynb) (Note that this notebook is 300k iterations, while the manuscript demonstrates 3 million iterations. The manuscript's figure may be recreated by changing the number of iterations.)
 - [Manuscript section 3.2: Notebook demonstrating how initialization works in NumPyro](paper_vignettes/3_2_numpyro_initialization.ipynb)
 - [Manuscript section 3.2: Notebook demonstrating how initialization works in TFP](paper_vignettes/3_2_tfp_initialization.ipynb)
 - [Manuscript section 3.2: Notebook demonstrating how initialization works in PyMC](paper_vignettes/3_2_pymc_initialization.ipynb)
