@@ -180,12 +180,17 @@ def plot_logistic_regression_selected_coeffs(
     legend_y=-0.28,
     subplot_hspace=None,
     x=None,
+    backend="matplotlib",
 ):
     """
     we plot the coefficient trajectories in the same mean-band style as
     the multidimensional random-restart notebooks.
+
+    backend: "matplotlib" (default, static, savable via plt.savefig) or
+    "plotly" (interactive, shown inline via fig.show(); the figure is also
+    returned).
     """
-    import matplotlib.pyplot as plt
+    from modulars.plot_rr import plot_mean_band_grid_1d
 
     if labels is None:
         labels = LOGISTIC_REGRESSION_LABELS
@@ -194,107 +199,15 @@ def plot_logistic_regression_selected_coeffs(
     if reference_stds is None:
         reference_stds = make_logistic_reference_stds()
 
-    def _as_ref_list(refs, default_label):
-        if isinstance(refs, (int, float, np.floating)):
-            return [(float(refs), default_label)]
-        return refs
-
-    row_height = 4.8 if legend_below else 4.0
-    fig, axs = plt.subplots(len(labels), 2, figsize=(16, row_height * len(labels)), squeeze=False)
-
-    if x is None:
-        iteration_stride = max(1, int(iteration_stride))
-        if iteration_stride == 1:
-            x = np.arange(single_means.shape[1])
-        else:
-            x = (np.arange(single_means.shape[1]) + 1) * iteration_stride
-    else:
-        x = np.asarray(x)
-
-    for dim, label in enumerate(labels):
-        mean_refs = []
-        std_refs = []
-        for values, color, run_label in (
-            (single_means[:, :, dim], "blue", "1 MC sample"),
-            (multi_means[:, :, dim], "green", "100 MC samples"),
-        ):
-            mean = values.mean(axis=0)
-            sd = values.std(axis=0)
-            axs[dim, 0].plot(x, mean, color=color, label=run_label)
-            axs[dim, 0].fill_between(x, mean - sd, mean + sd, color=color, alpha=0.2)
-
-        for values, color, run_label in (
-            (single_stds[:, :, dim], "blue", "1 MC sample"),
-            (multi_stds[:, :, dim], "green", "100 MC samples"),
-        ):
-            mean = values.mean(axis=0)
-            sd = values.std(axis=0)
-            axs[dim, 1].plot(x, mean, color=color, label=run_label)
-            axs[dim, 1].fill_between(x, mean - sd, mean + sd, color=color, alpha=0.2)
-
-        if label in reference_means:
-            refs = _as_ref_list(reference_means[label], "reference mean")
-            for ref_idx, (value, ref_label) in enumerate(refs):
-                mean_refs.append(float(value))
-                axs[dim, 0].axhline(
-                    value,
-                    color="red",
-                    linestyle="--" if ref_idx == 0 else ":",
-                    label=ref_label,
-                )
-
-        if label in reference_stds:
-            refs = _as_ref_list(reference_stds[label], "reference std")
-            for ref_idx, (value, ref_label) in enumerate(refs):
-                std_refs.append(float(value))
-                axs[dim, 1].axhline(
-                    value,
-                    color="red",
-                    linestyle="--" if ref_idx == 0 else ":",
-                    label=ref_label,
-                )
-
-        if reference_window and mean_refs and std_refs:
-            ref_sd = max(max(std_refs), 1e-12)
-            axs[dim, 0].set_ylim(
-                min(mean_refs) - mean_window_sd * ref_sd,
-                max(mean_refs) + mean_window_sd * ref_sd,
-            )
-        if reference_window and std_refs:
-            std_low, std_high = std_window
-            axs[dim, 1].set_ylim(
-                max(min(std_refs) * std_low, 0.0),
-                max(std_refs) * std_high,
-            )
-
-        axs[dim, 0].set_title(f"{title_prefix}{label}: variational mean")
-        axs[dim, 1].set_title(f"{title_prefix}{label}: variational std")
-        axs[dim, 0].set_xlabel("Iteration")
-        axs[dim, 1].set_xlabel("Iteration")
-        axs[dim, 0].grid()
-        axs[dim, 1].grid()
-        if legend_below:
-            legend_kwargs = {
-                "loc": "upper center",
-                "bbox_to_anchor": (0.5, legend_y),
-                "ncol": legend_ncol,
-                "frameon": True,
-            }
-            axs[dim, 0].legend(**legend_kwargs)
-            axs[dim, 1].legend(**legend_kwargs)
-        else:
-            axs[dim, 0].legend()
-            axs[dim, 1].legend()
-
-    plt.tight_layout()
-    if legend_below:
-        if subplot_hspace is None:
-            subplot_hspace = 0.9 if len(labels) > 1 else 0.45
-        fig.subplots_adjust(
-            hspace=subplot_hspace,
-            bottom=0.18 if len(labels) == 1 else 0.08,
-        )
-    plt.show()
+    return plot_mean_band_grid_1d(
+        single_means, single_stds, multi_means, multi_stds,
+        dims=list(range(len(labels))), labels=labels, title_prefix=title_prefix,
+        reference_means=reference_means, reference_stds=reference_stds,
+        iteration_stride=iteration_stride, reference_window=reference_window,
+        mean_window_sd=mean_window_sd, std_window=std_window,
+        legend_below=legend_below, legend_ncol=legend_ncol, legend_y=legend_y,
+        subplot_hspace=subplot_hspace, x=x, backend=backend,
+    )
 
 
 def plot_logistic_regression_selected_coeffs_zoomed(
@@ -311,6 +224,7 @@ def plot_logistic_regression_selected_coeffs_zoomed(
     iteration_stride=1,
     legend_ncol=2,
     x=None,
+    backend="matplotlib",
 ):
     """
     Plot selected logistic-regression coefficients with the same
@@ -332,6 +246,86 @@ def plot_logistic_regression_selected_coeffs_zoomed(
         std_window=std_window,
         legend_below=True,
         legend_ncol=legend_ncol,
+        backend=backend,
+    )
+
+
+def plot_logistic_regression_mean_band_single(
+        means,
+        stds,
+        labels=None,
+        title_prefix="",
+        reference_means=None,
+        reference_stds=None,
+        iteration_stride=1,
+        reference_window=True,
+        mean_window_sd=3.0,
+        std_window=(0.6, 1.6),
+        x=None,
+        backend="matplotlib",
+):
+    """
+    Mean +/- 1 SD band across restarts for ONE setup, all coefficients
+    combined as subplot rows in a single figure.
+    """
+    from modulars.plot_rr import plot_mean_band_grid_1d_single
+
+    if labels is None:
+        labels = LOGISTIC_REGRESSION_LABELS
+    if reference_means is None:
+        reference_means = make_logistic_reference_means()
+    if reference_stds is None:
+        reference_stds = make_logistic_reference_stds()
+
+    return plot_mean_band_grid_1d_single(
+        means, stds,
+        dims=list(range(len(labels))), labels=labels, title_prefix=title_prefix,
+        reference_means=reference_means, reference_stds=reference_stds,
+        iteration_stride=iteration_stride, reference_window=reference_window,
+        mean_window_sd=mean_window_sd, std_window=std_window, x=x, backend=backend,
+    )
+
+
+def plot_logistic_regression_selected_restarts(
+        default_means,
+        default_stds,
+        setup_means,
+        setup_stds,
+        labels=None,
+        title_prefix="",
+        reference_means=None,
+        reference_stds=None,
+        k=2,
+        iteration_stride=1,
+        reference_window=True,
+        mean_window_sd=3.0,
+        std_window=(0.6, 1.6),
+        single_label="Default (some runs)",
+        multi_label="Setup (some runs)",
+        x=None,
+        backend="matplotlib",
+):
+    """
+    k individual restart trajectories from the default scenario vs. k
+    from one setup, all coefficients combined as subplot rows in a
+    single figure.
+    """
+    from modulars.plot_rr import plot_a_few_trajectories_grid_1d
+
+    if labels is None:
+        labels = LOGISTIC_REGRESSION_LABELS
+    if reference_means is None:
+        reference_means = make_logistic_reference_means()
+    if reference_stds is None:
+        reference_stds = make_logistic_reference_stds()
+
+    return plot_a_few_trajectories_grid_1d(
+        default_means, default_stds, setup_means, setup_stds,
+        dims=list(range(len(labels))), labels=labels, title_prefix=title_prefix,
+        reference_means=reference_means, reference_stds=reference_stds,
+        k=k, iteration_stride=iteration_stride, reference_window=reference_window,
+        mean_window_sd=mean_window_sd, std_window=std_window,
+        single_label=single_label, multi_label=multi_label, x=x, backend=backend,
     )
 
 

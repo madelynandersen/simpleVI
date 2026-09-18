@@ -501,115 +501,34 @@ def plot_radon_selected_dims(
     legend_y=-0.28,
     subplot_hspace=None,
     x=None,
+    backend="matplotlib",
+    single_label="1 MC sample",
+    multi_label="100 MC samples",
 ):
-    """Plot radon VI mean/std trajectories for a small set of labeled dimensions."""
-    import matplotlib.pyplot as plt
+    """Plot radon VI mean/std trajectories for a small set of labeled dimensions.
 
-    def _as_ref_list(refs, default_label):
-        if isinstance(refs, (int, float, np.floating)):
-            return [(float(refs), default_label)]
-        return refs
+    single_label/multi_label: legend text for the two series -- override
+    these to name the actual scenarios being compared (e.g. "default" vs
+    "grad100_adapt_off") rather than the generic MC-sample-count wording,
+    since radon compares several distinct grad100_* scenarios, not just a
+    single MC-sample-count ablation.
 
-    n_rows = len(dims)
-    row_height = 4.8 if legend_below else 4.0
-    fig, axs = plt.subplots(n_rows, 2, figsize=(16, row_height * n_rows), squeeze=False)
-    if x is None:
-        iteration_stride = max(1, int(iteration_stride))
-        if iteration_stride == 1:
-            x = np.arange(single_means.shape[1])
-        else:
-            x = (np.arange(single_means.shape[1]) + 1) * iteration_stride
-    else:
-        x = np.asarray(x)
+    backend: "matplotlib" (default, static, savable via plt.savefig) or
+    "plotly" (interactive, shown inline via fig.show(); the figure is also
+    returned).
+    """
+    from modulars.plot_rr import plot_mean_band_grid_1d
 
-    for row, (dim, label) in enumerate(zip(dims, labels)):
-        mean_refs = []
-        std_refs = []
-        for values, color, run_label in (
-            (single_means[:, :, dim], "blue", "1 MC sample"),
-            (multi_means[:, :, dim], "green", "100 MC samples"),
-        ):
-            mean = values.mean(axis=0)
-            sd = values.std(axis=0)
-            axs[row, 0].plot(x, mean, color=color, label=run_label)
-            axs[row, 0].fill_between(x, mean - sd, mean + sd, color=color, alpha=0.2)
-
-        for values, color, run_label in (
-            (single_stds[:, :, dim], "blue", "1 MC sample"),
-            (multi_stds[:, :, dim], "green", "100 MC samples"),
-        ):
-            mean = values.mean(axis=0)
-            sd = values.std(axis=0)
-            axs[row, 1].plot(x, mean, color=color, label=run_label)
-            axs[row, 1].fill_between(x, mean - sd, mean + sd, color=color, alpha=0.2)
-
-        if reference_means and label in reference_means:
-            refs = _as_ref_list(reference_means[label], "external reported mean")
-            for ref_idx, (value, ref_label) in enumerate(refs):
-                mean_refs.append(float(value))
-                if "Saved VI" in ref_label:
-                    ref_label = "Best VI reference"
-                axs[row, 0].axhline(
-                    value,
-                    color="red",
-                    linestyle="--" if ref_idx == 0 else ":",
-                    label=ref_label,
-                )
-
-        if reference_stds and label in reference_stds:
-            refs = _as_ref_list(reference_stds[label], "external reported std")
-            for ref_idx, (value, ref_label) in enumerate(refs):
-                std_refs.append(float(value))
-                if "Saved VI" in ref_label:
-                    ref_label = "Best VI reference"
-                axs[row, 1].axhline(
-                    value,
-                    color="red",
-                    linestyle="--" if ref_idx == 0 else ":",
-                    label=ref_label,
-                )
-
-        if reference_window and mean_refs and std_refs:
-            ref_sd = max(max(std_refs), 1e-12)
-            axs[row, 0].set_ylim(
-                min(mean_refs) - mean_window_sd * ref_sd,
-                max(mean_refs) + mean_window_sd * ref_sd,
-            )
-        if reference_window and std_refs:
-            std_low, std_high = std_window
-            axs[row, 1].set_ylim(
-                max(min(std_refs) * std_low, 0.0),
-                max(std_refs) * std_high,
-            )
-
-        axs[row, 0].set_title(f"{title_prefix}{label}: variational mean")
-        axs[row, 1].set_title(f"{title_prefix}{label}: variational std")
-        axs[row, 0].set_xlabel("Iteration")
-        axs[row, 1].set_xlabel("Iteration")
-        axs[row, 0].grid()
-        axs[row, 1].grid()
-        if legend_below:
-            legend_kwargs = {
-                "loc": "upper center",
-                "bbox_to_anchor": (0.5, legend_y),
-                "ncol": legend_ncol,
-                "frameon": True,
-            }
-            axs[row, 0].legend(**legend_kwargs)
-            axs[row, 1].legend(**legend_kwargs)
-        else:
-            axs[row, 0].legend()
-            axs[row, 1].legend()
-
-    plt.tight_layout()
-    if legend_below:
-        if subplot_hspace is None:
-            subplot_hspace = 0.9 if n_rows > 1 else 0.45
-        fig.subplots_adjust(
-            hspace=subplot_hspace,
-            bottom=0.18 if n_rows == 1 else 0.08,
-        )
-    plt.show()
+    return plot_mean_band_grid_1d(
+        single_means, single_stds, multi_means, multi_stds,
+        dims=dims, labels=labels, title_prefix=title_prefix,
+        reference_means=reference_means, reference_stds=reference_stds,
+        iteration_stride=iteration_stride, reference_window=reference_window,
+        mean_window_sd=mean_window_sd, std_window=std_window,
+        legend_below=legend_below, legend_ncol=legend_ncol, legend_y=legend_y,
+        subplot_hspace=subplot_hspace, x=x, backend=backend,
+        single_label=single_label, multi_label=multi_label,
+    )
 
 
 def plot_radon_selected_dims_zoomed(
@@ -627,6 +546,9 @@ def plot_radon_selected_dims_zoomed(
     std_window=(0.6, 1.6),
     legend_ncol=2,
     x=None,
+    backend="matplotlib",
+    single_label="1 MC sample",
+    multi_label="100 MC samples",
 ):
     """
     Plot selected radon dimensions with the same reference-window zoom used by
@@ -650,4 +572,7 @@ def plot_radon_selected_dims_zoomed(
         std_window=std_window,
         legend_below=True,
         legend_ncol=legend_ncol,
+        backend=backend,
+        single_label=single_label,
+        multi_label=multi_label,
     )

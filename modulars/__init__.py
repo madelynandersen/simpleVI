@@ -17,8 +17,10 @@ try:
     from .stan_rr_test import (
         run_stan_random_restarts,
         stan_result_tuple,
+        stan_result_by_scenario,
         stan_vector_columns,
         tracked_iterations,
+        FOUR_WAY_STAN_SCENARIOS,
     )
 except ModuleNotFoundError:
     # CmdStanPy not in this environment

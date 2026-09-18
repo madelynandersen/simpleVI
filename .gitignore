@@ -49,6 +49,7 @@ coverage.xml
 
 # saved results
 single_MC/**/results/
+single_MC/**/stan_cmdstan_output/
 nt_*/
 modulars/bnp_species.py
 modulars/ridall_football.py
