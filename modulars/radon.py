@@ -576,3 +576,74 @@ def plot_radon_selected_dims_zoomed(
         single_label=single_label,
         multi_label=multi_label,
     )
+
+
+def plot_radon_mean_band_grid_single(
+        means, stds, x, title,
+        which_dims, which_labels,
+        reference_means, reference_stds):
+    """Single-scenario summary: mean +/- 1 SD (restart-to-restart spread)
+    shaded band for each representative dimension, one red dashed reference
+    line per panel -- the per-scenario counterpart to the default-vs-scenario
+    comparison plots in plot_radon_selected_dims/_zoomed. Plotly only (this
+    notebook always renders it that way; unlike the other grid plots here,
+    there's no matplotlib body)."""
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    from modulars.plot_rr import _grid_vertical_spacing
+
+    n_rows = len(which_dims)
+    subplot_titles = []
+    for lab in which_labels:
+        subplot_titles.append(f"{lab}: posterior mean")
+        subplot_titles.append(f"{lab}: posterior std")
+
+    fig = make_subplots(rows=n_rows, cols=2, vertical_spacing=_grid_vertical_spacing(n_rows),
+                         horizontal_spacing=0.1, subplot_titles=subplot_titles)
+
+    for row_idx, dim in enumerate(which_dims):
+        r = row_idx + 1
+        lab = which_labels[row_idx]
+        show_legend = row_idx == 0
+
+        m = np.nanmean(means[:, :, dim], axis=0)
+        m_spread = np.nanstd(means[:, :, dim], axis=0)
+        fig.add_trace(go.Scatter(
+            x=np.concatenate([x, x[::-1]]), y=np.concatenate([m + m_spread, (m - m_spread)[::-1]]),
+            fill="toself", fillcolor="rgba(31,119,180,0.25)", line=dict(width=0), hoverinfo="skip",
+            name="±1 SD across restarts", legendgroup="band", showlegend=show_legend,
+        ), row=r, col=1)
+        fig.add_trace(go.Scatter(
+            x=x, y=m, mode="lines", line=dict(color="rgb(31,119,180)", width=2),
+            name="Mean across restarts", legendgroup="mean", showlegend=show_legend,
+        ), row=r, col=1)
+        if lab in reference_means:
+            ref_mean = reference_means[lab][0][0]
+            fig.add_hline(y=ref_mean, line=dict(color="red", dash="dash"), row=r, col=1)
+            if lab in reference_stds:
+                ref_std_for_window = reference_stds[lab][0][0]
+                fig.update_yaxes(range=[ref_mean - 3.0 * ref_std_for_window, ref_mean + 3.0 * ref_std_for_window], row=r, col=1)
+
+        s = np.nanmean(stds[:, :, dim], axis=0)
+        s_spread = np.nanstd(stds[:, :, dim], axis=0)
+        fig.add_trace(go.Scatter(
+            x=np.concatenate([x, x[::-1]]), y=np.concatenate([s + s_spread, (s - s_spread)[::-1]]),
+            fill="toself", fillcolor="rgba(31,119,180,0.25)", line=dict(width=0), hoverinfo="skip",
+            name="±1 SD across restarts", legendgroup="band", showlegend=False,
+        ), row=r, col=2)
+        fig.add_trace(go.Scatter(
+            x=x, y=s, mode="lines", line=dict(color="rgb(31,119,180)", width=2),
+            name="Mean across restarts", legendgroup="mean", showlegend=False,
+        ), row=r, col=2)
+        if lab in reference_stds:
+            ref_std = reference_stds[lab][0][0]
+            fig.add_hline(y=ref_std, line=dict(color="red", dash="dash"), row=r, col=2)
+            fig.update_yaxes(range=[max(ref_std * 0.6, 0.0), ref_std * 1.6], row=r, col=2)
+
+        fig.update_xaxes(title_text="Iteration", row=r, col=1)
+        fig.update_xaxes(title_text="Iteration", row=r, col=2)
+
+    fig.add_trace(go.Scatter(x=[None], y=[None], mode="lines", line=dict(color="red", dash="dash"),
+                              name="best variational approximation"), row=1, col=1)
+    fig.update_layout(height=300 * n_rows, width=1400, title_text=title)
+    fig.show()

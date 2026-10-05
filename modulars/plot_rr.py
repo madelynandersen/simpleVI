@@ -317,7 +317,6 @@ def _plot_a_few_trajectories_1d_plotly(
 
     fig.update_layout(height=900, width=950, legend_title_text=label_prefix)
     fig.show()
-    return fig
 
 
 def _plot_mean_band_plotly(fig, row, x, Y, best_value, ylabel,
@@ -422,7 +421,6 @@ def _plot_mean_band_rrs_1d_plotly(
 
     fig.update_layout(height=900, width=950)
     fig.show()
-    return fig
 
 
 """
@@ -474,20 +472,6 @@ def plot_some_dims_multid(
         )
 
 
-# we need results to be stacked by restart_num, iter, dim, so single_mus[0,10,2]
-#  is the mean trajectory for the 3rd dimension of the 1st random restart
-
-    
-"""
-For multinomial dirichlet plotting, we want to plot the 
-marginals as well as the marginal trajectories
-ss we need to (a) compute measure transport summaries and
-(b) plot the trajectories of the marginals as well as the 
-(c) pdfs of the variational posterior marginals
--- can call the previous code to create (b)
--- can call the following code to create (c)
-less tested below
-"""
 def plot_simplex_dims(
         single_means, single_stds, multi_means, multi_stds,
         best_mean, best_cov, param_name=r'$\theta$',
@@ -768,7 +752,6 @@ def _plot_dirichlet_marginals_few_restarts_plotly(
 
     fig.update_layout(height=350 * n_cats, width=900, showlegend=True)
     fig.show()
-    return fig
 
 
 def plot_dirichlet_mean_band_rrs(
@@ -1630,7 +1613,6 @@ def _plot_mean_band_grid_1d_plotly(
 
     fig.update_layout(height=350 * n_rows, width=1400, legend_title_text=title_prefix)
     fig.show()
-    return fig
 
 
 def _grid_vertical_spacing(n_rows):
@@ -1768,7 +1750,6 @@ def _plot_mean_band_grid_1d_single_plotly(
 
     fig.update_layout(height=350 * n_rows, width=1400, legend_title_text=title_prefix)
     fig.show()
-    return fig
 
 
 def plot_a_few_trajectories_grid_1d(
@@ -1946,4 +1927,3 @@ def _plot_a_few_trajectories_grid_1d_plotly(
 
     fig.update_layout(height=350 * n_rows, width=1400, legend_title_text=title_prefix)
     fig.show()
-    return fig

@@ -50,6 +50,27 @@ coverage.xml
 # saved results
 single_MC/**/results/
 single_MC/**/stan_cmdstan_output/
+single_MC/**/processed_tracking/
+single_MC/**/default_checkpoint_results.pkl
+single_MC/**/tol_1e-6_default_rest_result.pkl
+single_MC/**/elbo_space_trajectory.npz
+single_MC/**/logfile
+paper_vignettes/stan_default_demos_output/
+stan_default_demos_output_realrepro/
+
+# compiled CmdStan binaries (extensionless executable matching a .stan
+# model's filename in the same directory; regenerated whenever a notebook
+# compiles that model)
+single_MC/1dbeta_binomial/random_restarts/stan_beta_binomial
+single_MC/1dgaussian_knownvar/random_restarts/stan_1dgaussian_knownvar
+single_MC/gamma_exponential/random_restarts/stan_gamma_exponential
+single_MC/gamma_poisson/random_restarts/stan_gamma_poisson
+single_MC/invgamma_gaussianknownmean/random_restarts/stan_invgamma_gaussian_knownmean
+single_MC/logistic_regression/stan_logistic_regression
+single_MC/multidim_gaussian_knowncovar/random_restarts/stan_multidim_gaussian_knowncovar
+single_MC/multinomial_dirichlet/stan_dirichlet_multinomial
+single_MC/radon_example/pymc_tutorial/stan_radon_varying_intercept
+
 nt_*/
 modulars/bnp_species.py
 modulars/ridall_football.py

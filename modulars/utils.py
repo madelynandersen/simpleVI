@@ -579,7 +579,7 @@ def find_best_params(
         score_fn=None,
         result_specs=None,
         processed_mc_settings=None,
-        score_seed_by_restart=True):
+        score_seed_by_restart=False):
     """
     we load every saved run from every file, score each one with compute_elbo
     or a caller-provided score_fn, and return the best mean / cov along with
@@ -733,6 +733,13 @@ def find_best_params(
                     seed=seed,
                 )
             else:
+                # score_seed_by_restart=True scores each candidate with a different
+                # seed, so two candidates with near-identical true ELBO (e.g. several
+                # restarts near a flat optimum) can be ranked by which one happened to
+                # get the more favorable Monte Carlo draw rather than by their actual
+                # ELBO -- keep the seed fixed across candidates unless you specifically
+                # need per-restart seeds and have checked the ELBO gaps you care about
+                # are larger than the scorer's own seed-to-seed noise.
                 score_seed = seed + local_restart_idx if score_seed_by_restart else seed
                 numpyro_elbo = score_fn(
                     mean=mean,

@@ -1,5 +1,6 @@
 from pathlib import Path
 import argparse
+import pickle
 import sys
 
 import jax
@@ -14,7 +15,8 @@ from numpyro.infer import TraceMeanField_ELBO
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from modulars.logistic_regression import load_logistic_regression_data
-from modulars.utils import find_best_params
+from modulars.stan_rr_test import stan_result_tuple
+from modulars.utils import find_best_params, save_to_csv
 
 
 RESULT_SPECS = [
@@ -23,6 +25,29 @@ RESULT_SPECS = [
     ("pymc_default", "results/pymc_default_processed_restarts.csv"),
     ("pymc_adam", "results/pymc_adam_processed_restarts.csv"),
 ]
+
+STAN_RESULT_PKL = "results/stan_result.pkl"
+STAN_PROCESSED_RESTARTS = "results/stan_processed_restarts.csv"
+
+
+def _prepare_stan_processed_restarts(base_dir):
+    """
+    we convert the saved Stan ADVI random-restart pickle (if present) into the
+    same (single_means, single_stds, multi_means, multi_stds) restart csv shape
+    find_best_params already understands for the other packages, so Stan can
+    compete on equal footing for the "best" variational reference.
+    """
+    pkl_path = base_dir / STAN_RESULT_PKL
+    if not pkl_path.exists():
+        print(f"skipping missing stan result file: {pkl_path}")
+        return None
+
+    with open(pkl_path, "rb") as f:
+        stan_result = pickle.load(f)
+
+    processed_path = base_dir / STAN_PROCESSED_RESTARTS
+    save_to_csv(processed_path, [stan_result_tuple(stan_result)])
+    return processed_path
 
 
 def numpyro_logistic_regression_model(data):
@@ -88,6 +113,10 @@ def main(ignore_pymc=False, grad_samps=50_000, seed=20240512):
             print(f"skipping missing result file: {path}")
             continue
         active_specs.append((method, str(path)))
+
+    stan_processed_path = _prepare_stan_processed_restarts(base_dir)
+    if stan_processed_path is not None:
+        active_specs.append(("stan", str(stan_processed_path)))
 
     if len(active_specs) == 0:
         raise FileNotFoundError(
