@@ -57,6 +57,7 @@ single_MC/**/elbo_space_trajectory.npz
 single_MC/**/logfile
 paper_vignettes/stan_default_demos_output/
 stan_default_demos_output_realrepro/
+single_MC/**/random_restarts/**.gz
 
 # compiled CmdStan binaries (extensionless executable matching a .stan
 # model's filename in the same directory; regenerated whenever a notebook
@@ -74,6 +75,11 @@ single_MC/radon_example/pymc_tutorial/stan_radon_varying_intercept
 nt_*/
 modulars/bnp_species.py
 modulars/ridall_football.py
+
+
+# Extension work
+extensionWork/
+extensionWork/*
 
 
 # Jupyter Notebook
