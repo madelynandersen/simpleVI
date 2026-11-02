@@ -47,15 +47,15 @@ tfp = [
   "tensorflow_probability>=0.24",
 ]
 
-# Pyro / PyTorch stack
+# Stan via CmdStanPy (CmdStan itself is installed separately, e.g. with conda's `cmdstan` package)
+stan = [
+  "cmdstanpy>=1.2",
+]
+
+# Pyro / PyTorch stack (only for the rr_pyro*.ipynb examples; not used in the manuscript)
 pyro = [
   "torch>=2.0",
   "pyro-ppl>=1.9",
-]
-
-# Data preparation helpers
-data = [
-  "xlrd>=2.0",
 ]
 
 # Notebook execution helpers
@@ -65,7 +65,7 @@ notebooks = [
   "nbclient>=0.10",
 ]
 
-# Convenience extra to install everything
+# Everything used for the manuscript (Pyro is not included)
 all = [
   "jax>=0.4",
   "jaxlib>=0.4",
@@ -74,9 +74,7 @@ all = [
   "pytensor>=2.0",
   "tensorflow>=2.15",
   "tensorflow_probability>=0.24",
-  "torch>=2.0",
-  "pyro-ppl>=1.9",
-  "xlrd>=2.0",
+  "cmdstanpy>=1.2",
   "ipykernel>=6",
   "jupyter>=1",
   "nbclient>=0.10",
@@ -84,3 +82,6 @@ all = [
 
 [tool.setuptools]
 packages = ["modulars"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -7,15 +7,7 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import TraceMeanField_ELBO
 from numpyro.distributions.transforms import StickBreakingTransform
-try:
-    from bakeoff.calculations.elbo_dist_classes import elbo_dist_class
-except ModuleNotFoundError:
-    elbo_dist_class = None
-
-import jax.numpy as jnp
-import jax
 from numpyro.distributions.transforms import Transform
-from numpyro.distributions.util import validate_sample
 from numpyro.distributions import constraints
 from numpyro.distributions.transforms import biject_to
 
@@ -105,26 +97,7 @@ class IteratedSigmoidCenteredTransform(Transform):
         Returns:
             log|det(J)| where J is the Jacobian matrix
         """
-        # For the IteratedSigmoidCentered transform, the Jacobian determinant is:
-        # |det(J)| = prod(y_i) / (sum(y_i))^K
-        
-        # Since y sums to 1, this simplifies to:
-        # |det(J)| = prod(y_i)
-        
-        # But we need to account for the fact that we're mapping K-1 -> K
-        # The actual Jacobian involves the derivative of the softmax
-        
-        # For softmax, the Jacobian determinant is:
-        # |det(J)| = prod(y_i) * (1 - sum(y_i^2))
-        
-        # Since y sums to 1, this becomes:
-        # |det(J)| = prod(y_i) * (1 - sum(y_i^2))
-        
-        # But for the centered version, we need to account for the centering
-        # The actual formula is more complex due to the centering operation
-        
-        # Simplified version: use the standard softmax Jacobian
-        # This is an approximation but should be close for most cases
+        # approximation: uses the softmax Jacobian, ignoring the centering step
         log_prod_y = jnp.sum(jnp.log(y + 1e-8), axis=-1)
         sum_y_squared = jnp.sum(y**2, axis=-1)
         log_det_jac = log_prod_y + jnp.log(1 - sum_y_squared + 1e-8)
@@ -193,7 +166,7 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
             # Gamma prior, Exponential likelihood
             def model(data):
                 lambd = numpyro.sample(param_name, dist.Gamma(*init_vals))
-                numpyro.sample('y', dist.Exponential(1/lambd), obs=data)
+                numpyro.sample('y', dist.Exponential(lambd), obs=data)
             return model
         elif model_str == 'gammapoisson':
             # Gamma prior, Poisson likelihood
@@ -235,7 +208,7 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                 base = dist.Normal(*init_vals)
                 transform = dist.transforms.ExpTransform()
                 lambd = numpyro.sample(param_name, dist.TransformedDistribution(base, transform))
-                numpyro.sample('y', dist.Exponential(1/lambd), obs=data)
+                numpyro.sample('y', dist.Exponential(lambd), obs=data)
             return model
         elif model_str == 'softplusnormal':
             # Softplus-Normal prior, Exponential likelihood (example)
@@ -243,7 +216,7 @@ def construct_model(model_str, param_name, init_vals, with_data=False):
                 base = dist.Normal(*init_vals)
                 transform = dist.transforms.SoftplusTransform()
                 lambd = numpyro.sample(param_name, dist.TransformedDistribution(base, transform))
-                numpyro.sample('y', dist.Exponential(1/lambd), obs=data)
+                numpyro.sample('y', dist.Exponential(lambd), obs=data)
             return model
         
         
@@ -574,187 +547,22 @@ def _elbo(model1, model2, data, grad_samps=10_000, seed=0):
     rng_key = jax.random.PRNGKey(seed)
     # Always pass data as an argument to model and guide
     loss_value = elbo.loss(rng_key, {}, model1, model2, data)
-    print(loss_value)
     return -1 * loss_value  # Return negative ELBO (higher is better)
 
 
 def compute_elbo(model_str, guide_str, param_name, model_vals, guide_vals, data=None, grad_samps=100, seed=0, with_data=False):
     """
     Computes the ELBO for a given model and guide. Sets q = guide / variational posterior and p = model / "true" posterior
-    """ 
-    elbo = TraceMeanField_ELBO(num_particles=grad_samps)
+    """
     if with_data:
         _require(data is not None, "Data must be provided for data-dependent models.")
         model = construct_model(model_str, param_name, model_vals, with_data=True)
-        try:
-            guide = construct_model(guide_str, param_name, guide_vals, with_data=False)
-        except Exception as e:
-            print(guide_str)
-            print(param_name)
-            print(guide_vals)
+        guide = construct_model(guide_str, param_name, guide_vals, with_data=False)
         return _elbo(model, guide, data, grad_samps, seed)
     else:
         model = construct_model(model_str, param_name, model_vals)
         guide = construct_model(guide_str, param_name, guide_vals)
         return _elbo(model, guide, data, grad_samps, seed)
-
-def pdf_from_str(dist_str, params):
-    # needs to return a class with a log_prob and sample method
-    if elbo_dist_class is None:
-        raise ImportError(
-            "pdf_from_str requires the optional bakeoff package, which is not installed."
-        )
-    return elbo_dist_class(dist_str, params)
-    
-
-def compute_manual_elbo(prior_info, variational_info, data=None, grad_samps=100, seed=0):
-    # we can only compute the manual elbo for distributions with known pdf forms
-    model_str = prior_info['str']
-    variational_str = variational_info['str']
-    likelihood_str = prior_info['likelihood_str']
-
-    model_pdf = pdf_from_str(model_str, prior_info['params'])
-    variational_pdf = pdf_from_str(variational_str, variational_info['params'])
-    likelihood_pdf = pdf_from_str(likelihood_str, prior_info['likelihood_params'])
-
-    # draw MC sample from variational distribution
-    rng_key = jax.random.PRNGKey(seed)
-    print(grad_samps)
-    samples = variational_pdf.sample(sample_shape=grad_samps, rng_key=rng_key)
-    print(samples.shape)
-    print(samples[0])
-    print(model_pdf.alpha)
-    log_prior = model_pdf.log_prob(samples).sum()
-    log_variational = variational_pdf.log_prob(samples).sum()
-    elbo = log_prior - log_variational
-    if data is not None:
-        # add log likelihood term if data is provided
-        log_likelihood = likelihood_pdf.log_prob(data).sum()
-        elbo += log_likelihood
-    return elbo
-
-from scipy.special import psi, gammaln  # digamma, log-gamma
-
-
-def bishop_103_elbo(
-    x, y,
-    beta,              # likelihood precision (1 / sigma_lik^2)
-    a0, b0,            # prior Gamma(a0, b0) on alpha (shape-rate)
-    m,                 # q(w) mean, shape (D,)  -> here D=2 for [b, m]
-    s,                 # q(w) std devs, shape (D,) (diagonal S)
-    a_q, b_q           # q(alpha) = Gamma(a_q, b_q) (shape-rate)
-):
-    """
-    Manual ELBO for Bishop 10.3 variational linear regression.
-
-    Model:
-      y_n | w ~ N(phi_n^T w, beta^-1),  phi_n = [1, x_n]^T
-      w | alpha ~ N(0, alpha^-1 I)
-      alpha ~ Gamma(a0, b0),  shape-rate parameterization:
-        p(alpha) = b0^a0 / Gamma(a0) * alpha^(a0-1) * exp(-b0 * alpha)
-
-    Variational family:
-      q(w) = N(w | m, S) with S diagonal diag(s^2)
-      q(alpha) = Gamma(a_q, b_q) (shape-rate)
-
-    Returns:
-      scalar ELBO value (float)
-    """
-    x = np.asarray(x, float)
-    y = np.asarray(y, float)
-    N = x.shape[0]
-    m = np.asarray(m, float).reshape(-1)
-    s = np.asarray(s, float).reshape(-1)
-    D = m.shape[0]  # should be 2 for (b, m)
-
-    # Design matrix Phi: [1, x_n]
-    Phi = np.column_stack([np.ones(N), x])  # (N, D)
-
-    # q(w) covariance S (diagonal)
-    var_w = s**2
-    S = np.diag(var_w)
-
-    # handy expectations for alpha
-    E_alpha = a_q / b_q
-    E_log_alpha = psi(a_q) - np.log(b_q)
-
-    # ------------------------------------------------------------------
-    # 1) E_q[ log p(y | w) ]
-    #    log p(y|w) = -N/2 log(2π) + N/2 log beta
-    #                 - (beta/2) ||y - Phi w||^2
-    #
-    #    E[||y - Phi w||^2] = ||y - Phi m||^2 + Tr(Phi S Phi^T)
-    # ------------------------------------------------------------------
-    resid_mean = y - Phi @ m
-    sq_error_mean = np.dot(resid_mean, resid_mean)             # ||y - Phi m||^2
-    # Tr(Phi S Phi^T) = Tr(S Phi^T Phi)
-    PhiT_Phi = Phi.T @ Phi
-    trace_term = np.trace(S @ PhiT_Phi)
-
-    term_y = (
-        -0.5 * N * np.log(2.0 * np.pi)
-        + 0.5 * N * np.log(beta)
-        - 0.5 * beta * (sq_error_mean + trace_term)
-    )
-
-    # ------------------------------------------------------------------
-    # 2) E_q[ log p(w | alpha) ]
-    #    log p(w|alpha) = D/2 log alpha - D/2 log(2π) - 1/2 alpha w^T w
-    #
-    #    E[w^T w] = m^T m + Tr(S)
-    # ------------------------------------------------------------------
-    Ew2 = np.dot(m, m) + np.trace(S)
-
-    term_w_prior = (
-        0.5 * D * E_log_alpha
-        - 0.5 * D * np.log(2.0 * np.pi)
-        - 0.5 * E_alpha * Ew2
-    )
-
-    # ------------------------------------------------------------------
-    # 3) E_q[ log p(alpha) ], alpha ~ Gamma(a0, b0)
-    #    log p(alpha) = a0 log b0 - log Γ(a0) + (a0-1) log alpha - b0 alpha
-    # ------------------------------------------------------------------
-    term_alpha_prior = (
-        a0 * np.log(b0)
-        - gammaln(a0)
-        + (a0 - 1.0) * E_log_alpha
-        - b0 * E_alpha
-    )
-
-    # ------------------------------------------------------------------
-    # 4) -E_q[ log q(w) ], q(w) = N(m, S)
-    #    E[log q(w)] = -D/2 log(2π) - 1/2 log|S| - D/2
-    #      -> -E[log q(w)] = D/2 log(2π) + 1/2 log|S| + D/2
-    # ------------------------------------------------------------------
-    logdet_S = np.sum(np.log(var_w))  # diag
-    term_entropy_w = (
-        0.5 * D * np.log(2.0 * np.pi)
-        + 0.5 * logdet_S
-        + 0.5 * D
-    )
-
-    # ------------------------------------------------------------------
-    # 5) -E_q[ log q(alpha) ], q(alpha) = Gamma(a_q, b_q)
-    #    log q(alpha) = a_q log b_q - log Γ(a_q)
-    #                   + (a_q - 1) log alpha - b_q alpha
-    #
-    #    E[log q(alpha)] =
-    #       a_q log b_q - log Γ(a_q)
-    #       + (a_q - 1) E[log alpha] - b_q E[alpha]
-    # ------------------------------------------------------------------
-    Eq_log_q_alpha = (
-        a_q * np.log(b_q)
-        - gammaln(a_q)
-        + (a_q - 1.0) * E_log_alpha
-        - b_q * E_alpha
-    )
-    term_entropy_alpha = -Eq_log_q_alpha
-
-    elbo = term_y + term_w_prior + term_alpha_prior + term_entropy_w + term_entropy_alpha
-    return float(elbo)
-
-
 
 if __name__ == "__main__":
     # set q = N(2, 2) and p = N(0, 10)

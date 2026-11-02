@@ -33,18 +33,13 @@ DEFAULT_STAN_SCENARIOS = (
     },
 )
 
-# Four-way comparison: default everything; grad_samples=100 with all other
-# settings left at their defaults (including adaptive eta); grad_samples=100
-# with adaptation disabled (eta left at its default); and grad_samples=100
-# with a much tighter ELBO convergence tolerance.
+# Four-way comparison: all defaults; grad_samples=100 (adaptive eta);
+# grad_samples=100 with eta adaptation off; and grad_samples=100 with a much
+# tighter ELBO convergence tolerance.
 #
-# The first three scenarios converge almost immediately (well under
-# max_iters/10 iterations) with Stan's default tol_rel_obj, so they only run
-# for max_iters/10 at the caller's own track_every -- there's nothing to see
-# past that. The tol_rel_obj scenario needs a much looser stopping bar to
-# actually keep optimizing, so it runs for max_iters*2 at a 10x coarser
-# track_every (still the same number of tracked checkpoints as the other
-# three, just spread over a longer run).
+# With Stan's default tol_rel_obj the first three converge well within
+# max_iters/10 iterations, so they run for max_iters/10. The tol_rel_obj=1e-6
+# scenario keeps optimizing, so it runs for 2 * max_iters, tracked 10x less often.
 FOUR_WAY_STAN_SCENARIOS = (
     {
         "name": "default",
@@ -75,15 +70,11 @@ FOUR_WAY_STAN_SCENARIOS = (
 )
 
 
-# Five-way comparison: the four FOUR_WAY_STAN_SCENARIOS scenarios, plus a
-# second tight-tolerance scenario that fixes eta=0.01 (adaptation must be
-# disabled for an explicit eta to actually take effect -- Stan ignores a
-# user-supplied eta and runs its own eta search whenever adapt is engaged),
-# to see whether the tol_rel_obj1e-6 scenario's late-iteration behavior is
-# eta-search-driven or persists under a fixed learning rate. Both
-# tol_rel_obj1e-6 scenarios run 4x longer than the base max_iters (200k at
-# the 1dgaussian notebook's max_iters=50_000) at a 10x coarser tracking
-# resolution, matching each other's grid for direct comparison.
+# Five-way comparison: the FOUR_WAY_STAN_SCENARIOS scenarios plus a second
+# tol_rel_obj=1e-6 scenario with eta fixed at 0.01 (Stan ignores eta while
+# adaptation is engaged, so adaptation is turned off), to check whether the
+# tight-tolerance behavior depends on the eta search. Both tol_rel_obj=1e-6
+# scenarios run for 4 * max_iters, tracked 10x less often, on the same grid.
 FIVE_WAY_STAN_SCENARIOS = (
     {
         "name": "default",
@@ -259,15 +250,10 @@ def _run_prefix_variational(
         max_retries=2):
     """Run one Stan variational prefix and return its parsed moments.
 
-    On very long runs (thousands of sequential Stan calls per restart, each
-    briefly creating and deleting a couple of files), run_dir has occasionally
-    been observed to vanish out from under an in-flight call -- most likely a
-    side effect of this living in a heavily-synced (iCloud) folder under
-    sustained file churn -- leaving the Stan CSV output, and even run_dir
-    itself, missing right after the subprocess exits. That is distinct from a
-    genuine ADVI failure (where run_dir survives but the CSV is merely
-    empty/malformed), so only a vanished run_dir triggers a retry of the whole
-    checkpoint; a real algorithmic failure is still recorded as one, as before.
+    If run_dir itself has disappeared after the call (file-sync clients can
+    remove it during long runs with many short-lived files), the call is
+    retried up to max_retries times. A missing or malformed CSV in an existing
+    run_dir is an ADVI failure and is recorded as one.
     """
     run_dir = Path(run_dir)
     stem = f"iter_{int(n_iters):06d}"
@@ -286,7 +272,9 @@ def _run_prefix_variational(
 
     for attempt in range(int(max_retries) + 1):
         run_dir.mkdir(parents=True, exist_ok=True)
+        start_time = time.perf_counter()
         completed = subprocess.run(cmd, capture_output=True, text=True)
+        seconds = time.perf_counter() - start_time
 
         try:
             if completed.returncode != 0 or keep_outputs:
@@ -342,6 +330,7 @@ def _run_prefix_variational(
         "error": error,
         "mean": mean,
         "std": std,
+        "seconds": seconds,
     }
 
 
@@ -368,6 +357,7 @@ def _run_restart_worker(args):
     n_params = len(param_columns)
     means = np.empty((n_track, n_params), dtype=dtype)
     stds = np.empty((n_track, n_params), dtype=dtype)
+    seconds = np.empty(n_track)
     failures = []
     run_dir = Path(output_dir) / scenario_name / f"restart_{restart_idx:03d}"
 
@@ -386,6 +376,7 @@ def _run_restart_worker(args):
         )
         means[track_idx] = result["mean"]
         stds[track_idx] = result["std"]
+        seconds[track_idx] = result["seconds"]
         if result["status"] != "ok":
             failures.append(
                 {
@@ -399,7 +390,7 @@ def _run_restart_worker(args):
                 }
             )
 
-    return scenario_idx, restart_idx, means, stds, failures
+    return scenario_idx, restart_idx, means, stds, failures, seconds
 
 
 def run_stan_random_restarts(
@@ -461,6 +452,7 @@ def run_stan_random_restarts(
     iterations_by_scenario = {}
     means_by_scenario = {}
     stds_by_scenario = {}
+    seconds_by_scenario = {}   # wall-clock seconds of every CmdStan run (one per tracked iteration)
 
     tasks = []
     for scenario_idx, scenario in enumerate(scenario_list):
@@ -473,6 +465,7 @@ def run_stan_random_restarts(
         iterations_by_scenario[scenario["name"]] = scenario_iterations
         n_track = len(scenario_iterations)
         means_by_scenario[scenario["name"]] = np.empty((n_restarts, n_track, n_params), dtype=dtype)
+        seconds_by_scenario[scenario["name"]] = np.empty((n_restarts, n_track))
         stds_by_scenario[scenario["name"]] = np.empty((n_restarts, n_track, n_params), dtype=dtype)
 
         scenario_tol_rel_obj = scenario.get("tol_rel_obj", tol_rel_obj)
@@ -516,17 +509,19 @@ def run_stan_random_restarts(
                 from tqdm import tqdm
                 future_iter = tqdm(future_iter, total=len(tasks), desc="Stan restart/scenario tasks")
             for future in future_iter:
-                scenario_idx, restart_idx, mean_traj, std_traj, task_failures = future.result()
+                scenario_idx, restart_idx, mean_traj, std_traj, task_failures, task_seconds = future.result()
                 name = scenario_list[scenario_idx]["name"]
                 means_by_scenario[name][restart_idx] = mean_traj
                 stds_by_scenario[name][restart_idx] = std_traj
+                seconds_by_scenario[name][restart_idx] = task_seconds
                 failures.extend(task_failures)
     else:
         for task in iterator:
-            scenario_idx, restart_idx, mean_traj, std_traj, task_failures = _run_restart_worker(task)
+            scenario_idx, restart_idx, mean_traj, std_traj, task_failures, task_seconds = _run_restart_worker(task)
             name = scenario_list[scenario_idx]["name"]
             means_by_scenario[name][restart_idx] = mean_traj
             stds_by_scenario[name][restart_idx] = std_traj
+            seconds_by_scenario[name][restart_idx] = task_seconds
             failures.extend(task_failures)
 
     if failures:
@@ -538,6 +533,7 @@ def run_stan_random_restarts(
         "iterations_by_scenario": iterations_by_scenario,
         "means_by_scenario": means_by_scenario,
         "stds_by_scenario": stds_by_scenario,
+        "seconds_by_scenario": seconds_by_scenario,
         "failures": failures,
         "param_columns": list(param_columns),
         "stan_file": str(stan_file),

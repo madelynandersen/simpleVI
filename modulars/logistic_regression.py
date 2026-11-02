@@ -1,5 +1,3 @@
-from tracemalloc import start
-
 import numpy as np
 import pandas as pd
 
@@ -20,18 +18,6 @@ PYMC_LOGISTIC_REPORTED_SUMMARIES = {
     "x2": {"mean": -0.675, "sd": 0.209},
     "x1:x2": {"mean": 1.698, "sd": 0.303},
 }
-
-LOGISTIC_REGRESSION_REFERENCE_NOTES = {
-    "pymc_tutorial": (
-        "The PyMC tutorial simulates n=250 observations with independent "
-        "Normal(0, 2) predictors and an interaction term."
-    ),
-    "model": (
-        "y_i ~ Bernoulli(logit^{-1}(X_i b)); b_j ~ Normal(0, 1), with "
-        "X = [1, x1, x2, x1*x2]."
-    ),
-}
-
 
 def load_logistic_regression_data(random_seed=8927, train_prop=0.7):
     """
@@ -139,27 +125,6 @@ def build_pymc_logistic_regression_model(data):
         pm.Deterministic("p", pm.math.invlogit(logits))
         pm.Potential("obs_loglike", pt.sum(y * logits - pt.softplus(logits)))
     return model
-
-
-def logistic_regression_decision_boundary(coefficients, x1_grid):
-    coefficients = np.asarray(coefficients, dtype=float)
-    x1_grid = np.asarray(x1_grid, dtype=float)
-    return -(
-        coefficients[0] + coefficients[1] * x1_grid
-    ) / (coefficients[2] + coefficients[3] * x1_grid)
-
-
-def make_logistic_reference_summary_frame():
-    rows = []
-    for label in LOGISTIC_REGRESSION_LABELS:
-        rows.append(
-            {
-                "parameter": label,
-                "pymc_tutorial_mean": PYMC_LOGISTIC_REPORTED_SUMMARIES[label]["mean"],
-                "pymc_tutorial_sd": PYMC_LOGISTIC_REPORTED_SUMMARIES[label]["sd"],
-            }
-        )
-    return pd.DataFrame(rows)
 
 
 def plot_logistic_regression_selected_coeffs(
@@ -327,43 +292,3 @@ def plot_logistic_regression_selected_restarts(
         mean_window_sd=mean_window_sd, std_window=std_window,
         single_label=single_label, multi_label=multi_label, x=x, backend=backend,
     )
-
-
-def plot_logistic_regression_decision_boundaries(
-    data,
-    coefficient_sets,
-    xlim=(-9, 9),
-    ylim=(-9, 9),
-    title="Logistic regression decision boundary",
-):
-    import matplotlib.pyplot as plt
-
-    x1_grid = np.linspace(start=xlim[0], stop=xlim[1], num=300)
-    fig, ax = plt.subplots(figsize=(8, 6))
-    scatter = ax.scatter(
-        data["x_test"][:, 1],
-        data["x_test"][:, 2],
-        c=data["y_test"],
-        cmap="coolwarm",
-        alpha=0.8,
-        edgecolor="none",
-    )
-
-    for label, coefficients in coefficient_sets.items():
-        boundary = logistic_regression_decision_boundary(coefficients, x1_grid)
-        ax.plot(x1_grid, boundary, linestyle=":", linewidth=2, label=label)
-
-    ax.set(
-        title=title,
-        xlim=xlim,
-        ylim=ylim,
-        xlabel="x1",
-        ylabel="x2",
-    )
-    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-    handles, _ = scatter.legend_elements()
-    if len(handles) == 2:
-        ax.add_artist(ax.legend(handles, ["0", "1"], title="y", loc="upper left"))
-        ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
-    plt.tight_layout()
-    plt.show()

@@ -1,31 +1,21 @@
 """Numpyro-style ELBO check for Stan's grad100_tol_rel_obj1e-6 scenario.
 
-Scores Stan's tightest-tolerance scenario's final variational approximation
-with the same fixed-guide numpyro ELBO metric (see compute_best_reference.py:
+Scores the scenario's final variational approximation with the fixed-guide
+numpyro ELBO used to pick best_reference_values.csv (compute_best_reference.py:
 _make_radon_fixed_guide / _radon_numpyro_score, TraceMeanField_ELBO with
-elbo_particles=4096, elbo_seed=0) used to pick the "best_reference_values.csv"
-reference recorded in best_reference_values.metadata.json, so the two numbers
-are directly comparable.
+elbo_particles=4096, elbo_seed=0), so the two numbers are directly comparable.
+Stan's saved moments are already on the same unconstrained scale (LOG_COLUMNS
+in rr_stan_radon.ipynb), so this only rescores saved trajectories.
 
-Stan's own mean-field ADVI output is already in the same unconstrained
-parameterization (see LOG_COLUMNS=["sigma_a", "sd_y"] applied in
-rr_stan_radon.ipynb / modulars.stan_rr_test.stan_result_by_scenario), so no
-rerun is needed -- this just rescoring already-saved trajectories.
-
-This needs jax/numpyro, which are not installed in the "stan3" conda
-environment this notebook otherwise runs in -- rr_stan_radon.ipynb invokes
-this script as a subprocess under a separate interpreter that has them (see
-the ELBO-check cell), the same way it shells out to the `stan` CmdStan binary
-rather than importing it.
+Needs jax/numpyro, which the "stan3" environment does not have, so
+rr_stan_radon.ipynb runs it as a subprocess in another environment.
 """
 import json
 import pickle
 import sys
 from pathlib import Path
 
-import numpy as np
-
-REPO_ROOT = Path("/Users/madelynandersen/Documents/VB Bakeoff/simpleVI")
+REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 

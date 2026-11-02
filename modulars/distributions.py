@@ -1,5 +1,7 @@
 # this function is for generating data helpers
 # and for computing posteriors helpers
+import numbers
+
 import numpy as np
 
 """
@@ -17,6 +19,42 @@ def beta_posterior(successes, trials, alpha_0, beta_0, *args, **kwargs):
         'std_post': np.sqrt(var_post)
     }
 
+def invgamma_posterior(data, mu_known, alpha_0, beta_0):
+    """Inverse-gamma posterior for a Gaussian variance with known mean.
+
+    Returns the posterior parameters and the posterior mean / SD of sigma^2.
+    """
+    n = len(data)
+    ss = 0.0 if n == 0 else np.sum((np.asarray(data) - mu_known) ** 2)
+    alpha_post = alpha_0 + n / 2
+    beta_post = beta_0 + 0.5 * ss
+    return {
+        'alpha_post': alpha_post,
+        'beta_post': beta_post,
+        'mean_post': beta_post / (alpha_post - 1),                          # needs alpha_post > 1
+        'std_post': beta_post / ((alpha_post - 1) * np.sqrt(alpha_post - 2)),  # needs alpha_post > 2
+    }
+
+def gamma_exponential_posterior(data, alpha_0, beta_0):
+    """Gamma(alpha, beta) posterior (rate parameterization) for an Exponential rate."""
+    return alpha_0 + len(data), beta_0 + float(np.sum(data))
+
+def gamma_poisson_posterior(data, alpha_0, beta_0):
+    """Gamma(alpha, beta) posterior (rate parameterization) for a Poisson rate."""
+    return alpha_0 + float(np.sum(data)), beta_0 + len(data)
+
+def gamma_lognormal_optimum(alpha, beta):
+    """Best mean-field (log-normal) approximation to a Gamma(alpha, beta) target, rate parameterization.
+
+    Minimizing KL(q || Gamma) over q = LogNormal(m, s^2) gives s = 1 / sqrt(alpha) and
+    m = log(alpha / beta) - 1 / (2 alpha), so q has the same mean alpha / beta as the target.
+    Returns the latent (unconstrained) Normal parameters (m, s).
+    """
+    s = 1.0 / np.sqrt(alpha)
+    m = np.log(alpha / beta) - 0.5 / alpha
+    return float(m), float(s)
+
+
 def gaussian_1d_posterior(data, n_samples=100, mu_prior=0, sigma_prior=1, sigma_like=10):
     if len(data) != n_samples:
         raise ValueError("data length must match n_samples")
@@ -28,7 +66,7 @@ def gaussian_multid_posterior(data, n_samples=100, mu_prior=0, scale_prior=1, sc
     # pass std_devs = True if you want to input standard deviations instead of variances for the prior and likelihood
     # this does require that both the prior and likelihood are diagonal if diag=True
     if len(data) != n_samples:
-        n_samples = len(data) # just in case we want to be flexible about the n_samples argument)
+        raise ValueError(f"data has {len(data)} observations but n_samples={n_samples}")
     if dim == 1:
         if std_devs is False:
             scale_prior = np.sqrt(scale_prior)
@@ -84,9 +122,9 @@ def gaussian_multid(n_samples=100, mu_like=0, scale_like=1, dim=5, seed=20, diag
     return observed_data
     
 def ensure_cov_arr(arr, shape):
-    if type(arr) == float or type(arr) == int:
+    if _is_real_scalar(arr):
         return np.eye(shape[0]) * arr
-    elif type(arr) == np.ndarray:
+    elif isinstance(arr, np.ndarray):
         if arr.shape == shape:
             return arr
         elif arr.shape == (shape[0],):
@@ -96,10 +134,15 @@ def ensure_cov_arr(arr, shape):
     else:
         raise ValueError(f"arr must be either a scalar, a numpy array of shape {shape}, or a numpy array of shape ({shape[0]},)")
 
+def _is_real_scalar(x):
+    """True for Python and numpy ints / floats (e.g. np.float64), but not bools or arrays."""
+    return isinstance(x, (numbers.Real, np.number)) and not isinstance(x, (bool, np.bool_)) and np.ndim(x) == 0
+
+
 def ensure_arr(arr, dim):
-    if type(arr) == float or type(arr) == int:
+    if _is_real_scalar(arr):
         return np.full(dim, arr)
-    elif type(arr) == np.ndarray and arr.shape == (dim,):
+    elif isinstance(arr, np.ndarray) and arr.shape == (dim,):
         return arr
     else:
         raise ValueError(f"arr must be either a scalar or a numpy array of shape ({dim},)")
@@ -202,4 +245,4 @@ def exact_grad(mu, rho, mu_p=0.0, sigma_p=1.0):
 
 def exact_g_rho_from_sigma(sigma, mu_p=0.0, sigma_p=1.0):
     """Evaluate the exact KL rho-gradient at a chosen sigma value."""
-    return float(exact_grad(0.0, inv_softplus(float(sigma)))[1], mu_p=mu_p, sigma_p=sigma_p)
+    return float(exact_grad(0.0, inv_softplus(float(sigma)), mu_p=mu_p,     sigma_p=sigma_p)[1])

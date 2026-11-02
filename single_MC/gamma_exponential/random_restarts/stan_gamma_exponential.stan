@@ -11,5 +11,5 @@ parameters {
 
 model {
   lambd ~ gamma(alpha_prior, beta_prior);
-  y ~ exponential(1 / lambd);
+  y ~ exponential(lambd);
 }

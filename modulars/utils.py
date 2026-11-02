@@ -1,12 +1,13 @@
 # random functions that we don't want to keep copy and pasting
 import json
+import numbers
 import os
 import csv
 from pathlib import Path
 import numpy as np
 from tqdm.notebook import tqdm
 from tqdm import tqdm as standard_tqdm
-from scipy.special import logit, expit
+from scipy.special import expit
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -41,10 +42,8 @@ def load_best_values(config=None, transform=None, n_samples=50_000, seed=1):
 
 
 def check_int_or_float(x):
-    if isinstance(x, int) or isinstance(x, float):
-        return True
-    else:
-        return False
+    """True for Python and numpy ints / floats (e.g. np.float64), but not bools or arrays."""
+    return isinstance(x, (numbers.Real, np.number)) and not isinstance(x, (bool, np.bool_)) and np.ndim(x) == 0
     
 def check_all_int_or_float_or_1darrays(*args):
     for arg in args:
@@ -93,7 +92,7 @@ def exp_lognormal_moments(mu, sigma, **_kwargs):
     return mean, np.sqrt(var)
 
 
-# Backward-compatible wrappers
+# aliases used by some notebooks
 def pushforward_exp_mean_std(mu, sigma):
     return exp_lognormal_moments(mu, sigma)
 
@@ -147,7 +146,7 @@ def logistic_moments(mu, sigma, n_samples=10_000, seed=0, batch_size=512, ddof=0
 
     return means, stds
 
-# Optional: keep old names working
+# aliases used by some notebooks (sample std, ddof=1)
 def _logistic_normal_mean_std_mc(mu, sigma, n_samples=10_000, seed=0):
     return logistic_moments(mu, sigma, n_samples=n_samples, seed=seed, ddof=1)
 
@@ -733,13 +732,9 @@ def find_best_params(
                     seed=seed,
                 )
             else:
-                # score_seed_by_restart=True scores each candidate with a different
-                # seed, so two candidates with near-identical true ELBO (e.g. several
-                # restarts near a flat optimum) can be ranked by which one happened to
-                # get the more favorable Monte Carlo draw rather than by their actual
-                # ELBO -- keep the seed fixed across candidates unless you specifically
-                # need per-restart seeds and have checked the ELBO gaps you care about
-                # are larger than the scorer's own seed-to-seed noise.
+                # with score_seed_by_restart=True each candidate gets its own Monte
+                # Carlo draws, so candidates with near-identical ELBO can be ranked
+                # by MC noise; a shared seed compares them on the same draws
                 score_seed = seed + local_restart_idx if score_seed_by_restart else seed
                 numpyro_elbo = score_fn(
                     mean=mean,
@@ -823,7 +818,6 @@ def save_best_run_to_config(config_file, best_info, extra_updates=None):
     with open(config_file, "w") as f:
         json.dump(config, f, indent=2)
 
-# less tested stuff below
 def anchored_softmax_simplex_forward(z, n_cats=None):
     """
     we map latent coordinates in R^(K-1) to the K-simplex using
@@ -1200,6 +1194,9 @@ def latent_diag_diagnostic(theta_draws, title_prefix):
     corr_anchored = np.corrcoef(z_anchored, rowvar=False)
     corr_stick = np.corrcoef(z_stick, rowvar=False)
 
+    import matplotlib.pyplot as plt
+
+    n_cats = theta_draws.shape[-1]
     anchored_recon = anchored_softmax_simplex_forward(z_anchored, n_cats=n_cats)
     stick_recon = stickbreaking_simplex_forward(z_stick, n_cats=n_cats)
 
@@ -1222,7 +1219,7 @@ def latent_diag_diagnostic(theta_draws, title_prefix):
 
     fig, axes = plt.subplots(1, 2, figsize=(8, 3.5))
 
-    im0 = axes[0].imshow(corr_anchored, vmin=-1, vmax=1, cmap="coolwarm")
+    axes[0].imshow(corr_anchored, vmin=-1, vmax=1, cmap="coolwarm")
     axes[0].set_title(title_prefix + " Anchored")
     axes[0].set_xticks(range(corr_anchored.shape[0]))
     axes[0].set_yticks(range(corr_anchored.shape[0]))

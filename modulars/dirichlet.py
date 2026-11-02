@@ -8,7 +8,7 @@ import numpy as np
 def plot_dirichlet_mean_band_grid(means, stds, x, title, labels, best_mean, best_std):
     """One combined n_cats x 2 (mean | std) grid for a single scenario:
     mean +/- 1 SD (restart-to-restart spread) shaded band, one red dashed
-    reference line per panel -- no grey multi-SD lines."""
+    reference line per panel."""
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -80,12 +80,8 @@ def plot_dirichlet_few_restarts_grid(means_a, stds_a, name_a, means_b, stds_b, n
 
     def _spread_restart_indices(means, k):
         # rank restarts by their final value on the first category and pick
-        # k spread evenly across that ranking (endpoints for k=2) -- picking
-        # by raw restart_idx instead can land on two restarts whose final
-        # values happen to coincide even when the full population has real
-        # spread (e.g. grad100_default_rest's restarts 0 and 19 are both
-        # ~0.405 even though the 20-restart range is 0.385-0.423), making the
-        # two selected-restart lines look identical/redundant.
+        # k spread evenly across that ranking (endpoints for k=2), so the
+        # selected restarts show the spread across restarts
         final_vals = means[:, -1, 0]
         order = np.argsort(final_vals)
         positions = np.linspace(0, len(order) - 1, min(k, len(order)), dtype=int)

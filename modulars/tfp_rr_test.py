@@ -1,10 +1,20 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-import numpy as np
 
 tfd = tfp.distributions
 tfb = tfp.bijectors
+
+
+def _stateless_seed(seed, stream):
+    """[2]-int32 stateless seed for TFP.
+
+    TFP turns a plain integer seed into a stateful tf.random draw, which XLA (jit_compile=True)
+    ignores, so runs with the same integer seed differ. A stateless [seed, stream] pair is
+    honoured, so the surrogate's initial values (stream 0) and the optimization's Monte Carlo
+    draws (stream 1) are reproducible from `seed`.
+    """
+    return tf.constant([int(seed), int(stream)], dtype=tf.int32)
 
 def _get_base_distribution(distribution):
     while hasattr(distribution, "distribution"):
@@ -73,7 +83,70 @@ def _tfp_fit_surrogate_posterior_thinned(
     return run_loop()
 
 
-def _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles=100, track_every=1):
+def _windowed_trace_fn(surrogate_posterior, n_iters, track_start):
+    """Trace only iterations track_start..n_iters (1-indexed) into fixed buffers.
+
+    fit_surrogate_posterior stacks one trace entry per step, so tracing loc and
+    scale every step of a long run holds the whole trajectory in memory. This
+    trace_fn writes loc/scale into window-sized variables instead (steps before
+    the window all land in slot 0, which the first in-window step overwrites)
+    and returns only the scalar loss, leaving the optimization itself unchanged.
+    """
+    n_window = int(n_iters) - int(track_start) + 1
+    event_shape = tf.shape(_get_base_distribution(surrogate_posterior.distribution).loc)
+    loc_buffer = tf.Variable(tf.zeros(tf.concat([[n_window], event_shape], 0), dtype=tf.float32), trainable=False)
+    scale_buffer = tf.Variable(tf.zeros(tf.concat([[n_window], event_shape], 0), dtype=tf.float32), trainable=False)
+    first_step = tf.constant(int(track_start) - 1, dtype=tf.int32)
+
+    def trace_fn(traceable_quantities):
+        # look the base distribution up on every call, as _tfp_run_restart's trace_fns do:
+        # a reference taken once outside holds the surrogate's initial parameter values
+        base_dist = _get_base_distribution(surrogate_posterior.distribution)
+        # traceable_quantities.step is the 0-indexed step that was just applied
+        idx = tf.maximum(tf.cast(traceable_quantities.step, tf.int32) - first_step, 0)
+        loc_buffer.scatter_nd_update([[idx]], [tf.cast(base_dist.loc, tf.float32)])
+        scale_buffer.scatter_nd_update([[idx]], [tf.cast(base_dist.scale, tf.float32)])
+        return traceable_quantities.loss
+
+    return trace_fn, loc_buffer, scale_buffer
+
+
+def _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles=100, track_every=1, track_start=None,
+                     run_multi=True):
+    """run_multi=False runs only the 1-sample fit and returns (loc, scale) (only with track_start)."""
+    if not run_multi and track_start is None:
+        raise NotImplementedError("run_multi=False is only supported with track_start")
+    if track_start is not None:
+        if int(track_every) != 1:
+            raise NotImplementedError("track_start is only supported with track_every=1")
+        single_trace_fn, single_loc, single_scale = _windowed_trace_fn(single_q_z, n_iters, track_start)
+        multi_trace_fn, multi_loc, multi_scale = _windowed_trace_fn(multi_q_z, n_iters, track_start)
+        tfp.vi.fit_surrogate_posterior(
+            conditioned_log_prob_fn,
+            surrogate_posterior=single_q_z,
+            optimizer=tf.optimizers.Adam(),
+            trace_fn=single_trace_fn,
+            num_steps=n_iters,
+            jit_compile=True,
+            seed=_stateless_seed(seed, 1)
+        )
+        if not run_multi:
+            return single_loc.read_value(), single_scale.read_value()
+        tfp.vi.fit_surrogate_posterior(
+            conditioned_log_prob_fn,
+            surrogate_posterior=multi_q_z,
+            optimizer=tf.optimizers.Adam(),
+            trace_fn=multi_trace_fn,
+            num_steps=n_iters,
+            jit_compile=True,
+            sample_size=n_particles,
+            seed=_stateless_seed(seed + 1000, 1)
+        )
+        return (
+            single_loc.read_value(), single_scale.read_value(),
+            multi_loc.read_value(), multi_scale.read_value(),
+        )
+
     if int(track_every) > 1:
         single_loc, single_scale = _tfp_fit_surrogate_posterior_thinned(
             conditioned_log_prob_fn,
@@ -109,7 +182,7 @@ def _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, se
         trace_fn=single_trace_fn,
         num_steps=n_iters,
         jit_compile=True,
-        seed=seed
+        seed=_stateless_seed(seed, 1)
     )
 
     multi_losses = tfp.vi.fit_surrogate_posterior(
@@ -120,7 +193,7 @@ def _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, se
         num_steps=n_iters,
         jit_compile=True,
         sample_size=n_particles,
-        seed=seed+1000
+        seed=_stateless_seed(seed + 1000, 1)
     )
 
     return tuple(_thin_tfp_trace(trace, track_every) for trace in (*single_losses, *multi_losses))
@@ -186,17 +259,20 @@ def _get_fullrank_loc_and_covariance(surrogate_posterior):
 def tfp_run_restart_1d(seed,
                    conditioned_log_prob_fn,
                    bijector=tfb.Identity(),
-                   n_iters=100_000, n_particles=100, track_every=1):
+                   n_iters=100_000, n_particles=100, track_every=1, track_start=None, run_multi=True):
     single_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+        seed=_stateless_seed(seed, 0),
         event_shape=(),
         bijector=bijector
     )
     multi_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+        seed=_stateless_seed(seed + 1000, 0),
         event_shape=(),
         bijector=bijector
     )
 
-    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles, track_every)
+    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles, track_every, track_start,
+                            run_multi=run_multi)
 
 def tfp_run_restart_multid(
         seed, dim,
@@ -205,24 +281,29 @@ def tfp_run_restart_multid(
         n_iters=100_000, n_particles=100,
         track_every=1,
         initial_loc=None,
-        initial_scale=1e-2):
+        initial_scale=1e-2,
+        track_start=None,
+        run_multi=True):
     initial_parameters = {"scale": initial_scale}
     if initial_loc is not None:
         initial_parameters["loc"] = tf.convert_to_tensor(initial_loc, dtype=tf.float32)
 
     single_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+        seed=_stateless_seed(seed, 0),
             event_shape=[dim],
             dtype=tf.float32,
             bijector=bijector,
             initial_parameters=initial_parameters,
         )
     multi_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+        seed=_stateless_seed(seed + 1000, 0),
             event_shape=[dim],
             dtype=tf.float32,
             bijector=bijector,
             initial_parameters=initial_parameters,
         )
-    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles, track_every)
+    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles, track_every, track_start,
+                            run_multi=run_multi)
 
 
 def tfp_run_restart_multid_fullrank(
@@ -234,11 +315,13 @@ def tfp_run_restart_multid_fullrank(
     del bijector
 
     single_q_z = tfp.experimental.vi.build_affine_surrogate_posterior(
+        seed=_stateless_seed(seed, 0),
         event_shape=[dim],
         operators="tril",
         dtype=tf.float32,
     )
     multi_q_z = tfp.experimental.vi.build_affine_surrogate_posterior(
+        seed=_stateless_seed(seed + 1000, 0),
         event_shape=[dim],
         operators="tril",
         dtype=tf.float32,
@@ -259,7 +342,7 @@ def tfp_run_restart_multid_fullrank(
         trace_fn=single_trace_fn,
         num_steps=n_iters,
         jit_compile=True,
-        seed=seed
+        seed=_stateless_seed(seed, 1)
     )
 
     multi_losses = tfp.vi.fit_surrogate_posterior(
@@ -270,7 +353,7 @@ def tfp_run_restart_multid_fullrank(
         num_steps=n_iters,
         jit_compile=True,
         sample_size=n_particles,
-        seed=seed+1000
+        seed=_stateless_seed(seed + 1000, 1)
     )
 
     return *single_losses, *multi_losses
@@ -285,6 +368,7 @@ def tfp_fit_multid_fullrank_covariance(
     del bijector
 
     q_z = tfp.experimental.vi.build_affine_surrogate_posterior(
+        seed=_stateless_seed(seed, 0),
         event_shape=[dim],
         operators="tril",
         dtype=tf.float32,
@@ -299,7 +383,7 @@ def tfp_fit_multid_fullrank_covariance(
         num_steps=n_iters,
         jit_compile=True,
         sample_size=n_particles,
-        seed=seed
+        seed=_stateless_seed(seed, 1)
     )
 
     loc, covariance = _get_fullrank_loc_and_covariance(q_z)
@@ -307,22 +391,25 @@ def tfp_fit_multid_fullrank_covariance(
 
 def tfp_run_restart_simplex(
         seed, n_cats, conditioned_log_prob_fn,
-        bijector=None, n_iters=100_000, n_particles=100):
+        bijector=None, n_iters=100_000, n_particles=100, track_start=None, run_multi=True):
     if bijector is None:
         bijector = tfb.IteratedSigmoidCentered()
 
     single_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+        seed=_stateless_seed(seed, 0),
         event_shape=[n_cats],
         bijector=bijector,
         dtype=tf.float32,
     )
     multi_q_z = tfp.experimental.vi.build_factored_surrogate_posterior(
+        seed=_stateless_seed(seed + 1000, 0),
         event_shape=[n_cats],
         bijector=bijector,
         dtype=tf.float32,
     )
 
-    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles)
+    return _tfp_run_restart(single_q_z, multi_q_z, conditioned_log_prob_fn, n_iters, seed, n_particles, track_start=track_start,
+                            run_multi=run_multi)
 
 
 def make_conditioned_lp(prior_dist, likelihood_dist, x, multivar=False):

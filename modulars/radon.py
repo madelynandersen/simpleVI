@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import numpy as np
@@ -6,47 +5,8 @@ import pandas as pd
 
 
 PYMC_REPORTED_SUMMARIES = {
-    # From the PyMC multilevel-modeling radon tutorial's varying-intercept model.
-    # The page reports the exact beta summary in text; the other parameters are
-    # visualized rather than printed as a compact table in the page text.
+    # beta summary reported in the PyMC multilevel-modeling radon tutorial
     "beta": {"mean": -0.664, "sd": 0.069},
-}
-
-PYMC_TUTORIAL_REFERENCE_MEANS = {
-    "beta": [(-0.664, "PyMC tutorial beta")],
-}
-
-PYMC_TUTORIAL_REFERENCE_STDS = {
-    "beta": [(0.069, "PyMC tutorial beta")],
-}
-
-PRICE_1996_REPORTED_SUMMARIES = {
-    # Price, Nero, and Gelman (1996), page 926 of the Health Physics article.
-    "mu": {"mean": 4.95},
-    "kappa_sq": {"mean": 0.570},
-    "sigma_sq": {"mean": 0.097},
-}
-
-PRICE_1996_REFERENCE_MEANS_UNCONSTRAINED = {
-    "mu": [(4.95, "Price et al. 1996 mu")],
-    "kappa_sq_log__": [(np.log(0.570), "Price et al. 1996 log(kappa^2)")],
-}
-
-PRICE_1996_MODEL_NOTES = {
-    "model": (
-        "log(adjusted radon Bq/m^3)_ij = theta_i + error_ij; "
-        "theta_i has mean mu and variance sigma^2; "
-        "error_ij has mean 0 and variance kappa^2."
-    ),
-    "comparison_parameters": "eta = (mu, kappa^2, sigma^2)",
-    "reported_values": (
-        "Price, Nero, and Gelman report mu=4.95, kappa^2=0.570, "
-        "and sigma^2=0.097 for the county geometric-mean model."
-    ),
-    "adjustment": (
-        "Measured pCi/L radon is adjusted as "
-        "r / 2 + sqrt(r^2 / 4 + 0.25^2) before converting to Bq/m^3."
-    ),
 }
 
 RADON_REFERENCE_NOTES = {
@@ -60,11 +20,6 @@ RADON_REFERENCE_NOTES = {
         "against the shared saved-output VI reference in best_reference_values.csv. "
         "The reference script selects the saved 100-MC variational restart with "
         "the largest NumPyro-computed fixed-guide ELBO."
-    ),
-    "price_nero_gelman_1996": (
-        "The peer-reviewed Price/Nero/Gelman Health Physics article uses a "
-        "different county-geometric-mean model on adjusted Bq/m^3 radon values; "
-        "those comparisons live in single_MC/radon_example/price_nero_gelman_1996."
     ),
 }
 
@@ -84,19 +39,6 @@ def make_radon_unconstrained_param_names(county_names):
         ["mu_a", "sigma_a_log__"]
         + [f"alpha[{county}]" for county in county_names]
         + ["beta", "sd_y_log__"]
-    )
-
-
-def make_price_radon_param_names(county_names, unconstrained=False):
-    """Return ordered latent labels for the Price/Nero/Gelman county-GM model."""
-    if unconstrained:
-        scale_names = ["kappa_sq_log__", "sigma_sq_log__"]
-    else:
-        scale_names = ["kappa_sq", "sigma_sq"]
-    return (
-        ["mu"]
-        + scale_names
-        + [f"theta[{county}]" for county in county_names]
     )
 
 
@@ -131,9 +73,6 @@ def load_radon_data(data_dir=None):
     """
     Load and preprocess the Minnesota radon data used by the radon notebooks.
 
-    The returned arrays are shared by the PyMC tutorial and Price/Nero/Gelman
-    notebooks. The uranium/contextual columns are kept because some radon
-    examples use them.
     """
     here = Path(__file__).resolve().parent
     repo_root = here.parent
@@ -206,15 +145,6 @@ def load_radon_data(data_dir=None):
 
     radon = radon.dropna(subset=["log_radon", "floor", "county"]).copy()
 
-    if "activity" in radon.columns:
-        activity_pci = radon["activity"].astype(float).to_numpy()
-        adjusted_pci = 0.5 * activity_pci + np.sqrt(0.25 * activity_pci**2 + 0.25**2)
-        radon["radon_bq_adjusted"] = adjusted_pci * 37.0
-        radon["log_radon_bq_adjusted"] = np.log(radon["radon_bq_adjusted"])
-    else:
-        radon["radon_bq_adjusted"] = np.exp(radon["log_radon"]) * 37.0
-        radon["log_radon_bq_adjusted"] = np.log(radon["radon_bq_adjusted"])
-
     county_names, county = np.unique(radon["county"].to_numpy(), return_inverse=True)
     floor = radon["floor"].astype(float).to_numpy()
     floor_by_county = (
@@ -228,8 +158,6 @@ def load_radon_data(data_dir=None):
     return {
         "frame": radon,
         "log_radon": radon["log_radon"].astype(float).to_numpy(),
-        "log_radon_bq_adjusted": radon["log_radon_bq_adjusted"].astype(float).to_numpy(),
-        "radon_bq_adjusted": radon["radon_bq_adjusted"].astype(float).to_numpy(),
         "floor": floor,
         "log_uranium": radon["log_uranium"].astype(float).to_numpy(),
         "county": county.astype(np.int32),
@@ -276,8 +204,13 @@ def build_numpyro_radon_model():
     return model
 
 
-def make_tfp_radon_conditioned_log_prob(data, dtype=None):
-    """Build the PyMC tutorial varying-intercept radon log-prob function for TFP."""
+def make_tfp_radon_conditioned_log_prob(data, dtype=None, transform_sigmas=True):
+    """Build the PyMC tutorial varying-intercept radon log-prob function for TFP.
+
+    transform_sigmas=True (the radon notebooks) takes sigma_a and sd_y on the log scale (with the log-Jacobian), so the
+    surrogate is unconstrained; False takes them as they are, TFP's untransformed default (a draw of a
+    sigma <= 0 has no density).
+    """
     import tensorflow as tf
     import tensorflow_probability as tfp
 
@@ -294,22 +227,27 @@ def make_tfp_radon_conditioned_log_prob(data, dtype=None):
     def log_prob_fn(theta):
         theta = tf.convert_to_tensor(theta, dtype=dtype)
         mu_a = theta[..., 0]
-        sigma_a_log = theta[..., 1]
         alpha = theta[..., 2 : 2 + num_counties]
         beta = theta[..., 2 + num_counties]
-        sd_y_log = theta[..., 3 + num_counties]
-
-        sigma_a = tf.exp(sigma_a_log)
-        sd_y = tf.exp(sd_y_log)
+        if transform_sigmas:
+            sigma_a_log = theta[..., 1]
+            sd_y_log = theta[..., 3 + num_counties]
+            sigma_a = tf.exp(sigma_a_log)
+            sd_y = tf.exp(sd_y_log)
+            log_jacobian = sigma_a_log + sd_y_log
+        else:
+            sigma_a = theta[..., 1]
+            sd_y = theta[..., 3 + num_counties]
+            log_jacobian = 0.0
 
         alpha_obs = tf.gather(alpha, county, axis=-1)
         mean = alpha_obs + beta[..., tf.newaxis] * floor
 
         lp = tfd.Normal(0.0, 10.0).log_prob(mu_a)
-        lp += tfd.Exponential(1.0).log_prob(sigma_a) + sigma_a_log
+        lp += tfd.Exponential(1.0).log_prob(sigma_a)
         lp += tf.reduce_sum(tfd.Normal(mu_a[..., tf.newaxis], sigma_a[..., tf.newaxis]).log_prob(alpha), axis=-1)
         lp += tfd.Normal(0.0, 10.0).log_prob(beta)
-        lp += tfd.Exponential(1.0).log_prob(sd_y) + sd_y_log
+        lp += tfd.Exponential(1.0).log_prob(sd_y) + log_jacobian
         lp += tf.reduce_sum(tfd.Normal(mean, sd_y[..., tf.newaxis]).log_prob(log_radon), axis=-1)
         return lp
 
@@ -333,130 +271,6 @@ def build_pymc_radon_model(data):
         mean = alpha[data["county"]] + beta * data["floor"]
         pm.Normal("log_radon", mean, sd_y, observed=data["log_radon"])
     return model
-
-
-def build_numpyro_price_radon_model():
-    """Build the Price/Nero/Gelman 1996 county-GM radon model for NumPyro SVI."""
-    import jax.numpy as jnp
-    import numpyro
-    import numpyro.distributions as dist
-
-    def model(log_radon, floor, log_uranium, county, floor_by_county):
-        num_counties = floor_by_county.shape[0]
-        del floor, log_uranium, floor_by_county
-
-        mu = numpyro.sample("mu", dist.Normal(0.0, 10.0))
-        kappa_sq = numpyro.sample("kappa_sq", dist.Exponential(1.0))
-        sigma_sq = numpyro.sample("sigma_sq", dist.Exponential(1.0))
-        theta = numpyro.sample(
-            "theta", dist.Normal(jnp.full(num_counties, mu), jnp.sqrt(sigma_sq)).to_event(1)
-        )
-
-        numpyro.sample("log_radon", dist.Normal(theta[county], jnp.sqrt(kappa_sq)), obs=log_radon)
-
-    return model
-
-
-def make_tfp_price_radon_conditioned_log_prob(data, dtype=None):
-    """Build the Price/Nero/Gelman county-GM log-prob function for TFP."""
-    import tensorflow as tf
-    import tensorflow_probability as tfp
-
-    tfd = tfp.distributions
-    if dtype is None:
-        dtype = tf.float32
-
-    log_radon = tf.convert_to_tensor(data["log_radon_bq_adjusted"], dtype=dtype)
-    county = tf.convert_to_tensor(data["county"], dtype=tf.int32)
-    num_counties = int(len(data["county_names"]))
-
-    @tf.function(jit_compile=False)
-    def log_prob_fn(theta_vec):
-        theta_vec = tf.convert_to_tensor(theta_vec, dtype=dtype)
-        mu = theta_vec[..., 0]
-        kappa_sq_log = theta_vec[..., 1]
-        sigma_sq_log = theta_vec[..., 2]
-        theta = theta_vec[..., 3 : 3 + num_counties]
-
-        kappa_sq = tf.exp(kappa_sq_log)
-        sigma_sq = tf.exp(sigma_sq_log)
-        kappa = tf.sqrt(kappa_sq)
-        sigma = tf.sqrt(sigma_sq)
-
-        theta_obs = tf.gather(theta, county, axis=-1)
-
-        lp = tfd.Normal(0.0, 10.0).log_prob(mu)
-        lp += tfd.Exponential(1.0).log_prob(kappa_sq) + kappa_sq_log
-        lp += tfd.Exponential(1.0).log_prob(sigma_sq) + sigma_sq_log
-        lp += tf.reduce_sum(tfd.Normal(mu[..., tf.newaxis], sigma[..., tf.newaxis]).log_prob(theta), axis=-1)
-        lp += tf.reduce_sum(tfd.Normal(theta_obs, kappa[..., tf.newaxis]).log_prob(log_radon), axis=-1)
-        return lp
-
-    return log_prob_fn
-
-
-def build_pymc_price_radon_model(data):
-    """Build the Price/Nero/Gelman 1996 county-GM radon model for PyMC ADVI."""
-    import pymc as pm
-    import pytensor.tensor as pt
-
-    num_counties = len(data["county_names"])
-    with pm.Model() as model:
-        mu = pm.Normal("mu", mu=0.0, sigma=10.0)
-        kappa_sq = pm.Exponential("kappa_sq", 1.0)
-        sigma_sq = pm.Exponential("sigma_sq", 1.0)
-        theta = pm.Normal("theta", mu=mu, sigma=pt.sqrt(sigma_sq), shape=num_counties)
-
-        pm.Normal(
-            "log_radon",
-            theta[data["county"]],
-            pt.sqrt(kappa_sq),
-            observed=data["log_radon_bq_adjusted"],
-        )
-    return model
-
-
-def price_theta_summary_from_unconstrained(loc, scale):
-    """
-    Compute eta=(mu,kappa^2,sigma^2) moments from diagonal q.
-
-    loc and scale are expected in the Price model unconstrained order:
-    mu, log(kappa^2), log(sigma^2), theta...
-    """
-    loc = np.asarray(loc, dtype=float)
-    scale = np.asarray(scale, dtype=float)
-    mean = np.array(
-        [
-            loc[0],
-            np.exp(loc[1] + 0.5 * scale[1] ** 2),
-            np.exp(loc[2] + 0.5 * scale[2] ** 2),
-        ]
-    )
-    sd = np.array(
-        [
-            scale[0],
-            np.sqrt((np.exp(scale[1] ** 2) - 1.0) * np.exp(2.0 * loc[1] + scale[1] ** 2)),
-            np.sqrt((np.exp(scale[2] ** 2) - 1.0) * np.exp(2.0 * loc[2] + scale[2] ** 2)),
-        ]
-    )
-    return mean, sd
-
-
-def save_reference_summary(path):
-    """Write the currently digitized external reference values to CSV."""
-    rows = [
-        {
-            "source": "PyMC tutorial",
-            "parameter": name,
-            "summary": summary,
-            "value": value,
-            "notes": "Exact reported summary from the PyMC varying-intercept radon model.",
-        }
-        for name, summaries in PYMC_REPORTED_SUMMARIES.items()
-        for summary, value in summaries.items()
-    ]
-    pd.DataFrame(rows).to_csv(path, index=False)
-    return path
 
 
 def print_reference_summary():
@@ -584,10 +398,8 @@ def plot_radon_mean_band_grid_single(
         reference_means, reference_stds):
     """Single-scenario summary: mean +/- 1 SD (restart-to-restart spread)
     shaded band for each representative dimension, one red dashed reference
-    line per panel -- the per-scenario counterpart to the default-vs-scenario
-    comparison plots in plot_radon_selected_dims/_zoomed. Plotly only (this
-    notebook always renders it that way; unlike the other grid plots here,
-    there's no matplotlib body)."""
+    line per panel; the single-scenario counterpart to
+    plot_radon_selected_dims. Plotly only."""
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
     from modulars.plot_rr import _grid_vertical_spacing

@@ -56,6 +56,10 @@ single_MC/**/tol_1e-6_default_rest_result.pkl
 single_MC/**/elbo_space_trajectory.npz
 single_MC/**/logfile
 paper_vignettes/stan_default_demos_output/
+# overall-bias results (hundreds of MB; archived separately) and any copies of them
+paper_vignettes/overall_bias_results*/
+# CmdStan output written by the Stan notebooks
+**/cmdstan_output/
 stan_default_demos_output_realrepro/
 single_MC/**/random_restarts/**.gz
 
@@ -71,6 +75,8 @@ single_MC/logistic_regression/stan_logistic_regression
 single_MC/multidim_gaussian_knowncovar/random_restarts/stan_multidim_gaussian_knowncovar
 single_MC/multinomial_dirichlet/stan_dirichlet_multinomial
 single_MC/radon_example/pymc_tutorial/stan_radon_varying_intercept
+single_MC/multinomial_dirichlet/stan_dirichlet_multinomial_stickbreaking
+single_MC/stan_conj1dgaussian_demo/1dgaussian
 
 nt_*/
 modulars/bnp_species.py
@@ -115,3 +121,11 @@ dmypy.json
 # Local config
 *.env
 .env.*
+
+# R / RStudio (Perennial_reproduction)
+.Rproj.user/
+.Rhistory
+.RData
+# rendered copy of Perennial_reproduction/README.md (out of date)
+Perennial_reproduction/README.html
+.Rproj.user

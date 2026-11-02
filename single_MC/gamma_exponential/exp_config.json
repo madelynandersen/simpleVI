@@ -2,7 +2,7 @@
     "lambda_like": 2.0,
     "alpha_prior": 1.5,
     "beta_prior": 1.0,
-    "n_samples": 0,
+    "n_samples": 10,
     "grad_samps": 1000,
     "max_iters": 10000,
     "adam_step": 0.001,
@@ -38,9 +38,8 @@
         }
     },
     "transformation": "exponential",
-    "best_elbo_np": -0.03430318832397461,
-    "best_mean": 0.0763561949133873,
-    "best_std": 0.8183040022850037,
-    "last_updated": "2025-07-29T14:59:06.371724",
-    "best_method": "tfp"
+    "best_mean": 0.5434506131249579,
+    "best_std": 0.29488391230979427,
+    "last_updated": "2026-10-27T15:06:50",
+    "best_method": "closed_form_gamma_lognormal_optimum"
 }

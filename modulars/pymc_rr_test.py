@@ -1,22 +1,36 @@
 import gc
-import os
 
 import numpy as np
+from scipy.optimize import brentq
 import pymc as pm
 import pytensor.tensor as pt
 import pytensor
-pytensor.config.cxx = '/usr/bin/clang++'
+
+# Use Apple's clang on macOS unless the user already chose a compiler
+# (SIMPLEVI_PYTENSOR_CXX, or cxx= in PYTENSOR_FLAGS).
+import os
+import sys
+if os.environ.get("SIMPLEVI_PYTENSOR_CXX"):
+    pytensor.config.cxx = os.environ["SIMPLEVI_PYTENSOR_CXX"]
+elif "cxx" not in os.environ.get("PYTENSOR_FLAGS", "") and sys.platform == "darwin" and os.path.exists("/usr/bin/clang++"):
+    pytensor.config.cxx = "/usr/bin/clang++"
+
 
 
 from pymc.logprob.transforms import Transform
 
 
 class _ThinnedTracker:
-    """Record PyMC ADVI stats every `track_every` iterations."""
+    """Record PyMC ADVI stats every `track_every` iterations.
 
-    def __init__(self, track_every=1, n_iters=None, dtype=np.float32, **kwargs):
+    If `track_start` is given, nothing is recorded before iteration
+    `track_start` (1-indexed), so a long run can keep only its tail window.
+    """
+
+    def __init__(self, track_every=1, n_iters=None, dtype=np.float32, track_start=None, **kwargs):
         self.track_every = max(1, int(track_every))
         self.n_iters = None if n_iters is None else int(n_iters)
+        self.track_start = None if track_start is None else int(track_start)
         self.n_seen = 0
         self.dtype = dtype
         self.whatchdict = kwargs
@@ -24,6 +38,8 @@ class _ThinnedTracker:
 
     def __call__(self, approx, hist, i):
         self.n_seen += 1
+        if self.track_start is not None and self.n_seen < self.track_start:
+            return
         if self.n_seen % self.track_every != 0 and self.n_seen != self.n_iters:
             return
         for key, fn in self.whatchdict.items():
@@ -58,11 +74,13 @@ def run_pymc_VI(
         track_every=1,
         track_cov=True,
         tracker_dtype=np.float32,
+        track_start=None,
         **kwargs):
     """
     Run pymc VI with the given model and return the mean and std trajectories
 
     optimizer can be 'default' (pymc's default) or 'adam' (pymc's adam)
+    track_start (1-indexed iteration) skips recording before that iteration
     """
     start = kwargs.pop("start", None)
     start_sigma = kwargs.pop("start_sigma", None)
@@ -74,6 +92,7 @@ def run_pymc_VI(
             track_every=track_every,
             n_iters=n_iters,
             dtype=tracker_dtype,
+            track_start=track_start,
             mean=advi.approx.mean.eval,
             std=advi.approx.std.eval,
         )
@@ -84,6 +103,7 @@ def run_pymc_VI(
             track_every=track_every,
             n_iters=n_iters,
             dtype=tracker_dtype,
+            track_start=track_start,
             mean=advi.approx.mean.eval,
             **{scale_name: scale_fn},
         )
@@ -395,11 +415,12 @@ def compile_pymc_ADVI_update(make_model, n_mc, optimizer_name, seed=42):
         step_fn = pm.pytensorf.compile([], outputs, updates=updates, random_seed=compile_seed)
     return advi, step_fn
 
-def run_full_pymc_ADVI(n_iters, n_mc, optimizer_name, seed=42, mu_p=0.0, sigma_p=1.0):
+def run_full_pymc_ADVI(make_model, n_iters, n_mc, optimizer_name, seed=42, mu_p=0.0, sigma_p=1.0):
     """
     Iterates over the single-step update function above.
     """
-    advi, step_fn = compile_pymc_ADVI_update(n_mc=n_mc, optimizer_name=optimizer_name, seed=seed)
+    advi, step_fn = compile_pymc_ADVI_update(make_model, n_mc=n_mc, optimizer_name=optimizer_name, seed=seed)
+
     rows, mean_trace, std_trace = [], [], []
     for _ in range(n_iters):
         rows.append([float(np.array(v).ravel()[0]) for v in step_fn()])
@@ -442,9 +463,10 @@ def validate_pymc_copy(make_model, seed=42,  RUN_SPECS=None, VALIDATION_ITERS=10
         for spec in RUN_SPECS
     }
     our_copy = {
-        spec['name']: run_full_pymc_ADVI(VALIDATION_ITERS, spec['n_mc'], spec['optimizer_name'], seed=seed, mu_p=mu_p, sigma_p=sigma_p)
+        spec['name']: run_full_pymc_ADVI(make_model, VALIDATION_ITERS, spec['n_mc'], spec['optimizer_name'], seed=seed, mu_p=mu_p, sigma_p=sigma_p)
         for spec in RUN_SPECS
     }
+    
     for spec in RUN_SPECS:
         name = spec['name']
         dm = np.max(np.abs(actual[name]['mean'] - our_copy[name]['mean']))

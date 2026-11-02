@@ -1,0 +1,4 @@
+package,label,setting,iterations,mc_samples,n_ok,n_failed,mean_s,sd_s,median_s,min_s,max_s,total_s
+stan_cmdstanpy,"Stan ADVI adjusted, 100 MC (CmdStanPy)",adjusted,50000.0,100.0,10,0,774.8259,8.839260633358677,774.4580000000001,765.405,795.175,7748.259
+stan_cmdstanpy,Stan ADVI default (CmdStanPy),default,50000.0,1.0,10,0,12.4825,0.2019027543700731,12.4295,12.243,12.831,124.825
+stan_cmdstanpy,Stan full defaults (CmdStanPy),full_defaults,10000.0,1.0,10,0,0.2981,0.017741664709566198,0.3055,0.255,0.313,2.981

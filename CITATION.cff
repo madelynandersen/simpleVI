@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below (preferred citation)."
+type: software
+title: "simpleVI: code for evaluating the default settings of variational inference software"
+abstract: >-
+  Code and results for evaluating the default settings of mean-field ADVI in PyMC, NumPyro,
+  TensorFlow Probability and Stan (CmdStanPy) on a suite of test models.
+authors:
+  - family-names: Andersen
+    given-names: Madelyn
+    affiliation: Massachusetts Institute of Technology
+version: 0.1.0
+date-released: "2026-10-27"
+license: MIT
+repository-code: "https://github.com/madelynandersen/simplevi"
+keywords:
+  - variational inference
+  - ADVI
+  - Bayesian inference
+  - probabilistic programming
+preferred-citation:
+  type: unpublished
+  title: "The Curious Case of the Default Settings: Evaluating Default Performance of Variational Inference Software"
+  authors:
+    - family-names: Andersen
+      given-names: Madelyn
+      affiliation: Massachusetts Institute of Technology
+    - family-names: Bersson
+      given-names: Elizabeth
+      affiliation: University of Chicago
+    - family-names: Broderick
+      given-names: Tamara
+      affiliation: Massachusetts Institute of Technology
+  year: 2026
+  notes: "Manuscript submitted for publication."

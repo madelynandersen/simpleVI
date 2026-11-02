@@ -1,0 +1,81 @@
+Response,Coefficient,Run,Seed,NUTS mean,NUTS SD,Run mean,Run SD,Mean offset (NUTS SDs),SD error vs NUTS (%),Best VB mean,Best VB SD,Mean offset (best-VB SDs),SD error vs best VB (%)
+Precipitation,Intercept,R ADVI default,1,-0.356,0.090,-0.373,0.023,-0.19,-74.0,-0.357,0.021,-0.78,+9.6
+Precipitation,Intercept,R ADVI adjusted (100 MC),1,-0.356,0.090,-0.354,0.022,+0.02,-76.1,-0.357,0.021,+0.11,+0.5
+Precipitation,Intercept,PyMC NUTS,1,-0.356,0.090,-0.353,0.090,+0.04,-0.1,-0.357,0.021,-,-
+Precipitation,Intercept,PyMC ADVI default (10k),11,-0.356,0.090,-0.317,0.142,+0.44,+57.2,-0.357,0.021,+1.85,+561.9
+Precipitation,Intercept,"PyMC ADVI (100 MC, 10k)",11,-0.356,0.090,-0.348,0.043,+0.09,-51.8,-0.357,0.021,+0.39,+102.9
+Precipitation,Intercept,"PyMC ADVI (Adam, 10k)",11,-0.356,0.090,-0.308,0.054,+0.54,-40.1,-0.357,0.021,+2.28,+152.4
+Precipitation,Intercept,PyMC ADVI default (150k),11,-0.356,0.090,-0.365,0.023,-0.10,-74.4,-0.357,0.021,-0.39,+8.0
+Precipitation,Intercept,"PyMC ADVI (100 MC, 150k)",11,-0.356,0.090,-0.356,0.021,-0.00,-76.2,-0.357,0.021,+0.02,+0.4
+Precipitation,Intercept,"PyMC ADVI (Adam, 150k)",11,-0.356,0.090,-0.355,0.021,+0.02,-77.1,-0.357,0.021,+0.08,-3.4
+Precipitation,Intercept,best VB approx,27,-0.356,0.090,-0.357,0.021,-0.00,-76.3,-0.357,0.021,-,-
+Precipitation,MAT,R ADVI default,1,-0.113,0.049,-0.115,0.022,-0.05,-55.4,-0.108,0.021,-0.34,+2.9
+Precipitation,MAT,R ADVI adjusted (100 MC),1,-0.113,0.049,-0.114,0.022,-0.02,-56.2,-0.108,0.021,-0.28,+1.0
+Precipitation,MAT,PyMC NUTS,1,-0.113,0.049,-0.113,0.049,-0.01,+0.5,-0.108,0.021,-,-
+Precipitation,MAT,PyMC ADVI default (10k),11,-0.113,0.049,-0.047,0.136,+1.33,+176.2,-0.108,0.021,+2.84,+536.8
+Precipitation,MAT,"PyMC ADVI (100 MC, 10k)",11,-0.113,0.049,-0.095,0.043,+0.36,-12.0,-0.108,0.021,+0.60,+102.8
+Precipitation,MAT,"PyMC ADVI (Adam, 10k)",11,-0.113,0.049,-0.044,0.049,+1.40,+0.2,-0.108,0.021,+3.00,+131.0
+Precipitation,MAT,PyMC ADVI default (150k),11,-0.113,0.049,-0.100,0.023,+0.27,-52.5,-0.108,0.021,+0.40,+9.5
+Precipitation,MAT,"PyMC ADVI (100 MC, 150k)",11,-0.113,0.049,-0.109,0.021,+0.08,-56.6,-0.108,0.021,-0.05,+0.2
+Precipitation,MAT,"PyMC ADVI (Adam, 150k)",11,-0.113,0.049,-0.108,0.021,+0.11,-56.5,-0.108,0.021,+0.02,+0.3
+Precipitation,MAT,best VB approx,27,-0.113,0.049,-0.108,0.021,+0.10,-56.6,-0.108,0.021,-,-
+Precipitation,MAP,R ADVI default,1,1.293,0.974,1.128,0.472,-0.17,-51.5,1.214,0.449,-0.19,+5.2
+Precipitation,MAP,R ADVI adjusted (100 MC),1,1.293,0.974,1.204,0.446,-0.09,-54.2,1.214,0.449,-0.02,-0.5
+Precipitation,MAP,PyMC NUTS,1,1.293,0.974,1.294,0.970,+0.00,-0.4,1.214,0.449,-,-
+Precipitation,MAP,PyMC ADVI default (10k),11,1.293,0.974,-0.192,0.623,-1.53,-36.1,1.214,0.449,-3.13,+38.7
+Precipitation,MAP,"PyMC ADVI (100 MC, 10k)",11,1.293,0.974,0.799,0.454,-0.51,-53.4,1.214,0.449,-0.92,+1.2
+Precipitation,MAP,"PyMC ADVI (Adam, 10k)",11,1.293,0.974,-0.178,0.466,-1.51,-52.2,1.214,0.449,-3.10,+3.8
+Precipitation,MAP,PyMC ADVI default (150k),11,1.293,0.974,1.070,0.507,-0.23,-48.0,1.214,0.449,-0.32,+12.9
+Precipitation,MAP,"PyMC ADVI (100 MC, 150k)",11,1.293,0.974,1.213,0.452,-0.08,-53.6,1.214,0.449,-0.00,+0.7
+Precipitation,MAP,"PyMC ADVI (Adam, 150k)",11,1.293,0.974,1.195,0.468,-0.10,-51.9,1.214,0.449,-0.04,+4.3
+Precipitation,MAP,best VB approx,27,1.293,0.974,1.214,0.449,-0.08,-53.9,1.214,0.449,-,-
+Precipitation,MAP²,R ADVI default,1,2.600,0.630,2.551,0.492,-0.08,-21.9,2.575,0.456,-0.05,+8.0
+Precipitation,MAP²,R ADVI adjusted (100 MC),1,2.600,0.630,2.575,0.459,-0.04,-27.2,2.575,0.456,+0.00,+0.8
+Precipitation,MAP²,PyMC NUTS,1,2.600,0.630,2.599,0.626,-0.00,-0.7,2.575,0.456,-,-
+Precipitation,MAP²,PyMC ADVI default (10k),11,2.600,0.630,0.911,0.597,-2.68,-5.2,2.575,0.456,-3.65,+31.1
+Precipitation,MAP²,"PyMC ADVI (100 MC, 10k)",11,2.600,0.630,2.523,0.465,-0.12,-26.2,2.575,0.456,-0.11,+2.1
+Precipitation,MAP²,"PyMC ADVI (Adam, 10k)",11,2.600,0.630,2.179,0.473,-0.67,-25.0,2.575,0.456,-0.87,+3.7
+Precipitation,MAP²,PyMC ADVI default (150k),11,2.600,0.630,2.541,0.508,-0.09,-19.4,2.575,0.456,-0.07,+11.5
+Precipitation,MAP²,"PyMC ADVI (100 MC, 150k)",11,2.600,0.630,2.569,0.465,-0.05,-26.3,2.575,0.456,-0.01,+2.0
+Precipitation,MAP²,"PyMC ADVI (Adam, 150k)",11,2.600,0.630,2.561,0.462,-0.06,-26.8,2.575,0.456,-0.03,+1.3
+Precipitation,MAP²,best VB approx,27,2.600,0.630,2.575,0.456,-0.04,-27.7,2.575,0.456,-,-
+Moisture deficit,Intercept,R ADVI default,1,-0.339,0.090,-0.345,0.023,-0.06,-74.3,-0.341,0.021,-0.16,+8.1
+Moisture deficit,Intercept,R ADVI adjusted (100 MC),1,-0.339,0.090,-0.346,0.021,-0.08,-76.3,-0.341,0.021,-0.23,-0.2
+Moisture deficit,Intercept,PyMC NUTS,1,-0.339,0.090,-0.342,0.089,-0.03,-0.7,-0.341,0.021,-,-
+Moisture deficit,Intercept,PyMC ADVI default (10k),11,-0.339,0.090,-0.308,0.146,+0.35,+62.9,-0.341,0.021,+1.56,+585.5
+Moisture deficit,Intercept,"PyMC ADVI (100 MC, 10k)",11,-0.339,0.090,-0.337,0.044,+0.02,-51.4,-0.341,0.021,+0.19,+104.5
+Moisture deficit,Intercept,"PyMC ADVI (Adam, 10k)",11,-0.339,0.090,-0.313,0.054,+0.30,-39.4,-0.341,0.021,+1.35,+155.1
+Moisture deficit,Intercept,PyMC ADVI default (150k),11,-0.339,0.090,-0.350,0.024,-0.11,-73.5,-0.341,0.021,-0.39,+11.5
+Moisture deficit,Intercept,"PyMC ADVI (100 MC, 150k)",11,-0.339,0.090,-0.342,0.022,-0.03,-75.9,-0.341,0.021,-0.03,+1.3
+Moisture deficit,Intercept,"PyMC ADVI (Adam, 150k)",11,-0.339,0.090,-0.343,0.022,-0.04,-76.0,-0.341,0.021,-0.07,+1.1
+Moisture deficit,Intercept,best VB approx,27,-0.339,0.090,-0.341,0.021,-0.02,-76.2,-0.341,0.021,-,-
+Moisture deficit,MAT,R ADVI default,1,-0.050,0.050,-0.050,0.022,+0.00,-57.2,-0.047,0.021,-0.13,+2.6
+Moisture deficit,MAT,R ADVI adjusted (100 MC),1,-0.050,0.050,-0.045,0.021,+0.09,-58.9,-0.047,0.021,+0.09,-1.5
+Moisture deficit,MAT,PyMC NUTS,1,-0.050,0.050,-0.050,0.050,-0.01,-0.1,-0.047,0.021,-,-
+Moisture deficit,MAT,PyMC ADVI default (10k),11,-0.050,0.050,-0.010,0.133,+0.81,+165.0,-0.047,0.021,+1.79,+534.7
+Moisture deficit,MAT,"PyMC ADVI (100 MC, 10k)",11,-0.050,0.050,-0.032,0.043,+0.35,-14.7,-0.047,0.021,+0.70,+104.2
+Moisture deficit,MAT,"PyMC ADVI (Adam, 10k)",11,-0.050,0.050,-0.006,0.049,+0.88,-3.2,-0.047,0.021,+1.97,+131.9
+Moisture deficit,MAT,PyMC ADVI default (150k),11,-0.050,0.050,-0.046,0.023,+0.08,-54.3,-0.047,0.021,+0.06,+9.4
+Moisture deficit,MAT,"PyMC ADVI (100 MC, 150k)",11,-0.050,0.050,-0.047,0.021,+0.07,-58.5,-0.047,0.021,+0.03,-0.7
+Moisture deficit,MAT,"PyMC ADVI (Adam, 150k)",11,-0.050,0.050,-0.050,0.021,-0.00,-57.6,-0.047,0.021,-0.14,+1.6
+Moisture deficit,MAT,best VB approx,27,-0.050,0.050,-0.047,0.021,+0.06,-58.2,-0.047,0.021,-,-
+Moisture deficit,MAP,R ADVI default,1,2.293,1.019,2.191,0.489,-0.10,-52.0,2.215,0.450,-0.05,+8.6
+Moisture deficit,MAP,R ADVI adjusted (100 MC),1,2.293,1.019,2.223,0.448,-0.07,-56.0,2.215,0.450,+0.02,-0.5
+Moisture deficit,MAP,PyMC NUTS,1,2.293,1.019,2.300,1.010,+0.01,-0.8,2.215,0.450,-,-
+Moisture deficit,MAP,PyMC ADVI default (10k),11,2.293,1.019,0.295,0.638,-1.96,-37.4,2.215,0.450,-4.26,+41.7
+Moisture deficit,MAP,"PyMC ADVI (100 MC, 10k)",11,2.293,1.019,1.798,0.444,-0.49,-56.4,2.215,0.450,-0.93,-1.3
+Moisture deficit,MAP,"PyMC ADVI (Adam, 10k)",11,2.293,1.019,0.850,0.479,-1.42,-53.0,2.215,0.450,-3.03,+6.4
+Moisture deficit,MAP,PyMC ADVI default (150k),11,2.293,1.019,2.085,0.498,-0.20,-51.1,2.215,0.450,-0.29,+10.5
+Moisture deficit,MAP,"PyMC ADVI (100 MC, 150k)",11,2.293,1.019,2.214,0.444,-0.08,-56.4,2.215,0.450,-0.00,-1.4
+Moisture deficit,MAP,"PyMC ADVI (Adam, 150k)",11,2.293,1.019,2.219,0.461,-0.07,-54.7,2.215,0.450,+0.01,+2.4
+Moisture deficit,MAP,best VB approx,27,2.293,1.019,2.215,0.450,-0.08,-55.8,2.215,0.450,-,-
+Moisture deficit,MAP²,R ADVI default,1,3.010,0.632,2.956,0.466,-0.08,-26.2,2.984,0.449,-0.06,+3.8
+Moisture deficit,MAP²,R ADVI adjusted (100 MC),1,3.010,0.632,2.986,0.450,-0.04,-28.7,2.984,0.449,+0.00,+0.3
+Moisture deficit,MAP²,PyMC NUTS,1,3.010,0.632,3.012,0.628,+0.00,-0.6,2.984,0.449,-,-
+Moisture deficit,MAP²,PyMC ADVI default (10k),11,3.010,0.632,1.176,0.582,-2.90,-7.9,2.984,0.449,-4.02,+29.5
+Moisture deficit,MAP²,"PyMC ADVI (100 MC, 10k)",11,3.010,0.632,2.944,0.449,-0.10,-28.9,2.984,0.449,-0.09,-0.0
+Moisture deficit,MAP²,"PyMC ADVI (Adam, 10k)",11,3.010,0.632,2.596,0.458,-0.66,-27.5,2.984,0.449,-0.86,+2.0
+Moisture deficit,MAP²,PyMC ADVI default (150k),11,3.010,0.632,2.950,0.492,-0.10,-22.1,2.984,0.449,-0.08,+9.5
+Moisture deficit,MAP²,"PyMC ADVI (100 MC, 150k)",11,3.010,0.632,2.985,0.450,-0.04,-28.8,2.984,0.449,+0.00,+0.1
+Moisture deficit,MAP²,"PyMC ADVI (Adam, 150k)",11,3.010,0.632,2.978,0.448,-0.05,-29.0,2.984,0.449,-0.01,-0.2
+Moisture deficit,MAP²,best VB approx,27,3.010,0.632,2.984,0.449,-0.04,-28.9,2.984,0.449,-,-

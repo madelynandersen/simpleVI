@@ -1,16 +1,13 @@
 """Numpyro-style ELBO check for the Stan grad100_tol_rel_obj1e-6 scenario.
 
-Scores grad100_tol_rel_obj1e-6's final variational approximation with the
-same ELBO metric (modulars.elbo_computations.compute_elbo, model="multidirich",
-guide="stickbreak_mvn") used by rr_dirich_find_best.ipynb to pick the
-cross-framework "best variational approximation" recorded in
-dirichlet_config.json, so the two numbers are directly comparable.
+Scores the scenario's final variational approximation with the same ELBO
+(modulars.elbo_computations.compute_elbo, model="multidirich",
+guide="stickbreak_mvn") that rr_dirich_find_best.ipynb uses to pick the
+"best variational approximation" in dirichlet_config.json, so the two numbers
+are directly comparable.
 
-This needs jax/numpyro, which are not installed in the "stan3" conda
-environment this notebook otherwise runs in -- rr_dirich_stan.ipynb invokes
-this script as a subprocess under a separate interpreter that has them
-(see the ELBO-check cell), the same way it shells out to the `stan`
-CmdStan binary rather than importing it.
+Needs jax/numpyro, which the "stan3" environment does not have, so
+rr_dirich_stan.ipynb runs it as a subprocess in another environment.
 """
 import json
 import os
@@ -19,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-REPO_ROOT = Path("/Users/madelynandersen/Documents/VB Bakeoff/simpleVI")
+REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -27,12 +24,12 @@ NB_DIR = REPO_ROOT / "single_MC/multinomial_dirichlet"
 os.chdir(NB_DIR)
 
 import cmdstanpy
-STAN3_CMDSTAN = Path("/Users/madelynandersen/miniconda3/envs/stan3/bin/cmdstan")
+STAN3_CMDSTAN = Path(os.environ.get("SIMPLEVI_CMDSTAN_PATH") or cmdstanpy.cmdstan_path())
 os.environ["CMDSTAN"] = str(STAN3_CMDSTAN)
 os.environ["SIMPLEVI_CMDSTAN_PATH"] = str(STAN3_CMDSTAN)
 cmdstanpy.set_cmdstan_path(str(STAN3_CMDSTAN))
 
-from modulars.distributions import gen_multinomial_data_shared, lda_posterior_shared_theta
+from modulars.distributions import gen_multinomial_data_shared
 from modulars.utils import load_config
 from modulars.stan_rr_test import run_stan_random_restarts, read_variational_draws
 from modulars.elbo_computations import compute_elbo

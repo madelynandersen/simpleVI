@@ -17,8 +17,8 @@ def _resolve_dim_name(dim, dim_to_name=None, param_name="param"):
     """
     Resolve a plotted dimension to a human-readable parameter label.
 
-    Existing notebooks that do not pass dim_to_name keep the historical
-    param_name_dimN fallback, while richer models can pass {dim: label}.
+    Without dim_to_name the label is param_name_dimN; models with named
+    coordinates can pass {dim: label}.
     """
     if dim_to_name is not None:
         if dim in dim_to_name:
@@ -201,10 +201,7 @@ def plot_mean_band_rrs_1d(
             STD_STRING = r" $\pm$ " + ", ".join([str(x) for x in WHICH_STDS]) + " SD"
         else:
             STD_STRING = ""
-        # n_mc_samps == 1 always means the plain Stan-default ADVI config in
-        # this codebase's convention, regardless of which scenario this call
-        # happens to be paired against -- label it as such rather than
-        # borrowing that scenario's name (e.g. "grad100_default_rest").
+        # n_mc_samps == 1 is always the fully default ADVI config
         prefix = "fully_default: " if n_mc_samps == 1 else label_prefix + f"{n_mc_samps} MC samples: "
         return (
             prefix
@@ -387,10 +384,7 @@ def _plot_mean_band_rrs_1d_plotly(
             std_string = " ± " + ", ".join(str(w) for w in WHICH_STDS) + " SD"
         else:
             std_string = ""
-        # n_mc_samps == 1 always means the plain Stan-default ADVI config in
-        # this codebase's convention, regardless of which scenario this call
-        # happens to be paired against -- label it as such rather than
-        # borrowing that scenario's name (e.g. "grad100_default_rest").
+        # n_mc_samps == 1 is always the fully default ADVI config
         prefix = "fully_default: " if n_mc_samps == 1 else label_prefix + f"{n_mc_samps} MC samples: "
         return (
             prefix
@@ -582,7 +576,6 @@ def plot_dirichlet_marginals_few_restarts(
         axes = [axes]
 
     x = np.linspace(0, 1, 1000)
-    marginal_colors = ['purple', 'teal', 'coral', 'gold', 'lightblue']
 
     for i in range(n_cats):
         ax = axes[i]
@@ -593,7 +586,6 @@ def plot_dirichlet_marginals_few_restarts(
         true_sigma = true_sigma_post[i]
 
         true_beta = beta(alpha_i, beta_i)
-        marginal_color = marginal_colors[i % len(marginal_colors)]
 
         ax.plot(
             x,
@@ -1275,7 +1267,6 @@ def plot_step_inputs(inspect_df, RUN_BY_NAME):
 """
 Helper functions for the 3.1 plots in the full manuscript
 """
-import matplotlib.pyplot as plt
 import matplotlib as mpl
 def plot_3_1_trajectories(
         single_means,
@@ -1294,8 +1285,20 @@ def plot_3_1_trajectories(
         mean_yticks = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1],
         mean_y_labels = ['-1.0', None, '-0.5', None, '0.0', None, '0.5', None, '1.0'],
         std_yticks = [9, 9.25, 9.5, 9.75, 10, 10.25, 10.5, 10.75, 11],
-        std_y_labels = ['9.0', None, '9.5', None, '10.0', None, '10.5', None, '11.0']
+        std_y_labels = ['9.0', None, '9.5', None, '10.0', None, '10.5', None, '11.0'],
+        iterations=None,
+        mean_ylim=None,
+        std_ylim=None,
+        std_ylabel=r'Variational Approximation of $\sigma_p$',
+        std_true_label=r'True value of $\sigma_p$',
 ):
+    """Default (1 MC) vs adjusted (100 MC) trajectories of the variational mean and std.
+
+    iterations: iteration number of each tracked value (default: 0, 1, 2, ..., i.e. every
+    iteration was tracked). mean_ylim / std_ylim: y-axis limits (default: true value +/- 1).
+    std_ylabel / std_true_label: std panel y label and true-value legend label (e.g. for
+    stds rescaled by the true sigma_p).
+    """
     legend_title = None
     if PYMC_ADAM:
         framework_name = "PyMC Adam"
@@ -1316,7 +1319,7 @@ def plot_3_1_trajectories(
     plt.rc('font', size=FONT_SIZE)
 
     # convert x vals to millions / hundred thousands of iterations
-    x_vals = np.arange(len(single_means)) / div_it
+    x_vals = (np.arange(len(single_means)) if iterations is None else np.asarray(iterations)) / div_it
     std_ax.set_xlim(0, max_iters / div_it)
     mean_ax.set_xlim(0, max_iters / div_it)
 
@@ -1332,21 +1335,21 @@ def plot_3_1_trajectories(
     mean_ax.set_yticks(mean_yticks, mean_y_labels)
     mean_ax.grid()
 
-    mean_ax.set_ylim(true_mu - 1, true_mu + 1)
+    mean_ax.set_ylim(mean_ylim if mean_ylim is not None else (true_mu - 1, true_mu + 1))
 
     # plot the std trajectories
     std_ax.plot(x_vals, single_stds, label='Default setting: 1 monte carlo sample', color='blue', lw=LINE_WIDTH)
     std_ax.plot(x_vals, multi_stds, label='Adjusted setting: 100 monte carlo samples', color='green', lw=LINE_WIDTH)
-    std_ax.axhline(true_sigma, color='red', linestyle='--', label=r'True value of $\sigma_p$', lw=LINE_WIDTH)
+    std_ax.axhline(true_sigma, color='red', linestyle='--', label=std_true_label, lw=LINE_WIDTH)
 
-    std_ax.set_title(framework_name + r" Variational Approximation of $\sigma_p$ (Posterior Std of $\sigma$)")
+    std_ax.set_title(framework_name + r" Variational Approximation of $\sigma_p$ (Posterior Std of $\mu$)")
     std_ax.set_xlabel('Iterations ' + div_label)
-    std_ax.set_ylabel(r'Variational Approximation of $\sigma_p$', fontsize=FONT_SIZE)
+    std_ax.set_ylabel(std_ylabel, fontsize=FONT_SIZE)
     std_ax.legend(bbox_to_anchor=(0, 0), loc='lower left', fontsize=FONT_SIZE, title=legend_title)
     std_ax.set_yticks(std_yticks, std_y_labels)
     std_ax.grid()
 
-    std_ax.set_ylim(true_sigma - 1, true_sigma + 1)
+    std_ax.set_ylim(std_ylim if std_ylim is not None else (true_sigma - 1, true_sigma + 1))
 
     plt.tight_layout()
     plt.show()
@@ -1379,12 +1382,10 @@ def plot_mean_band_grid_1d(
     labels: parallel list of display labels for those dimensions (also used
     to look up reference_means/reference_stds, keyed by label).
 
-    single_label/multi_label: legend text for the two series. Default to
-    "1 MC sample"/"100 MC samples" (the historical wording, accurate when
-    comparing plain default ADVI against a grad_samples=100 scenario) --
-    override these when comparing scenarios that aren't just a MC-sample-count
-    difference (e.g. radon's several distinct grad100_* scenarios), so the
-    legend names the actual scenario rather than a generic sample count.
+    single_label/multi_label: legend text for the two series. Defaults to
+    "1 MC sample"/"100 MC samples"; pass scenario names when the two series
+    differ in more than the number of MC samples (e.g. radon's grad100_*
+    scenarios).
 
     backend: "matplotlib" (default, static, savable via plt.savefig) or
     "plotly" (interactive, shown inline via fig.show(); the figure is also
@@ -1616,13 +1617,8 @@ def _plot_mean_band_grid_1d_plotly(
 
 
 def _grid_vertical_spacing(n_rows):
-    """Keep the total whitespace between grid rows a constant fraction of
-    the figure regardless of row count -- vertical_spacing held constant
-    per row (as opposed to scaled by 1/(n_rows-1)) eats a share of the
-    figure that grows with n_rows, which at n_rows=4 left each row just
-    ~35px of a 1400px-tall figure. See plot_mean_band_grid_1d's plotly
-    counterpart for where this bug originally showed up.
-    """
+    """Plotly vertical_spacing that keeps the total whitespace between grid
+    rows a constant fraction of the figure, whatever the number of rows."""
     return 0.25 / max(n_rows - 1, 1)
 
 

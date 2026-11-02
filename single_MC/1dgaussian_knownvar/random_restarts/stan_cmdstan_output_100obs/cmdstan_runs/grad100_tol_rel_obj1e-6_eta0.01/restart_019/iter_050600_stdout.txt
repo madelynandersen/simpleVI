@@ -1,0 +1,74 @@
+method = variational
+  variational
+    algorithm = meanfield (Default)
+      meanfield
+    iter = 50600
+    grad_samples = 100
+    elbo_samples = 100 (Default)
+    eta = 0.01
+    adapt
+      engaged = false
+      iter = 50 (Default)
+    tol_rel_obj = 1e-06
+    eval_elbo = 100 (Default)
+    output_samples = 1000 (Default)
+id = 1 (Default)
+data
+  file = stan_cmdstan_output_100obs/cmdstan_runs/stan_data.json
+init = 2 (Default)
+random
+  seed = 119
+output
+  file = stan_cmdstan_output_100obs/cmdstan_runs/grad100_tol_rel_obj1e-6_eta0.01/restart_019/iter_050600.csv
+  diagnostic_file = stan_cmdstan_output_100obs/cmdstan_runs/grad100_tol_rel_obj1e-6_eta0.01/restart_019/iter_050600_diagnostic.csv
+  refresh = 0
+  sig_figs = 8 (Default)
+  profile_file = profile.csv (Default)
+  save_cmdstan_config = false (Default)
+num_threads = 1 (Default)
+
+------------------------------------------------------------
+EXPERIMENTAL ALGORITHM:
+  This procedure has not been thoroughly tested and may be unstable
+  or buggy. The interface is subject to change.
+------------------------------------------------------------
+
+
+
+Gradient evaluation took 2e-06 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
+Adjust your expectations accordingly!
+
+
+Begin stochastic gradient ascent.
+  iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
+   100         -829.713             1.000            1.000
+   200         -854.691             0.515            1.000
+   300         -863.029             0.346            0.029
+   400         -806.620             0.277            0.070
+   500         -798.288             0.224            0.029
+   600         -711.846             0.207            0.070
+   700         -708.953             0.178            0.029
+   800         -703.380             0.157            0.029
+   900         -733.755             0.144            0.029
+  1000         -688.107             0.136            0.041
+  1100         -713.559             0.127            0.036
+  1200         -680.537             0.120            0.041
+  1300         -668.771             0.112            0.036
+  1400         -663.226             0.105            0.036
+  1500         -658.065             0.099            0.029
+  1600         -643.834             0.094            0.029
+  1700         -634.411             0.089            0.022
+  1800         -606.418             0.087            0.029
+  1900         -609.977             0.082            0.022
+  2000         -603.641             0.079            0.022
+  2100         -606.387             0.075            0.018
+  2200         -606.899             0.072            0.018
+  2300         -601.946             0.069            0.015
+  2400         -576.851             0.068            0.018
+  2500         -564.547             0.066            0.018
+  2600         -575.220             0.064            0.019
+  2700         -558.406             0.063            0.019
+  2800         -546.208             0.062            0.022
+  2900         -546.941             0.060            0.019
+  3000         -549.004             0.058            0.019

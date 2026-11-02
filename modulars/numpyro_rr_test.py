@@ -4,7 +4,6 @@ import jax.numpy as jnp
 from numpyro.infer import SVI, Trace_ELBO
 from numpyro.infer.autoguide import AutoNormal, AutoDiagonalNormal, AutoMultivariateNormal
 from numpyro.optim import Adam
-import matplotlib.pyplot as plt
 
 def _prepare_model_args(data=None, model_args=None):
     if model_args is not None:
@@ -28,11 +27,17 @@ def _run_restart_numpyro(
         data=None,
         model_args=None,
         track_every=1,
-        guide_kwargs=None):
+        guide_kwargs=None,
+        track_start=None,
+        run_multi=True):
+    # track_start (1-indexed iteration) runs the first track_start - 1
+    # updates untracked, so only the tail of a long run is stored;
+    # run_multi=False runs only the 1-particle fit and returns (loc, scale)
     optimizer = Adam(step_size=step_size)
     args = _prepare_model_args(data=data, model_args=model_args)
     track_every = max(1, int(track_every))
-    n_track = int(np.ceil(n_iters / track_every))
+    n_burn = 0 if track_start is None else int(track_start) - 1
+    n_track = int(np.ceil((n_iters - n_burn) / track_every))
     if guide_kwargs is None:
         guide_kwargs = {}
 
@@ -48,6 +53,11 @@ def _run_restart_numpyro(
         @jax.jit
         def run_loop(rng_key, *args):
             svi_state = svi_model.init(rng_key, *args)
+            if n_burn > 0:
+                def burn_once(_, state):
+                    state, _ = svi_model.update(state, *args)
+                    return state
+                svi_state = jax.lax.fori_loop(0, n_burn, burn_once, svi_state)
 
             if tracker_shapes is None:
                 local_tracker_shapes = (tracker_shape,) * len(tracker_params)
@@ -77,12 +87,14 @@ def _run_restart_numpyro(
                 }
                 return svi_state, tracker, n_done + n_to_run
 
-            _, tracker, _ = jax.lax.fori_loop(0, n_track, body_fn, (svi_state, tracker, 0))
+            _, tracker, _ = jax.lax.fori_loop(0, n_track, body_fn, (svi_state, tracker, n_burn))
             return tracker
 
         return run_loop(rng_key, *args)
 
     single_tracker = run_svi(jax.random.PRNGKey(seed), single_svi)
+    if not run_multi:
+        return single_tracker[tracker_params[0]], single_tracker[tracker_params[1]]
     multi_tracker = run_svi(jax.random.PRNGKey(seed + 1000), multi_svi)
 
     return (
@@ -97,11 +109,13 @@ def run_restart_multid(
         param_name,
         n_iters,
         dim,
-        n_particles=100, # since this is the default setting
+        n_particles=100,
         model_args=None,
         step_size=5e-4,
         track_every=1,
-        guide_kwargs=None):
+        guide_kwargs=None,
+        track_start=None,
+        run_multi=True):
     return _run_restart_numpyro(
         seed=seed,
         model=model,
@@ -116,6 +130,8 @@ def run_restart_multid(
         model_args=model_args,
         track_every=track_every,
         guide_kwargs=guide_kwargs,
+        track_start=track_start,
+        run_multi=run_multi,
     )
 
 
@@ -139,7 +155,9 @@ def run_restart_multid_autonormal(
         model_args=None,
         step_size=5e-4,
         track_every=1,
-        guide_kwargs=None):
+        guide_kwargs=None,
+        track_start=None,
+        run_multi=True):
     del param_name
     return _run_restart_numpyro(
         seed=seed,
@@ -155,6 +173,8 @@ def run_restart_multid_autonormal(
         model_args=model_args,
         track_every=track_every,
         guide_kwargs=guide_kwargs,
+        track_start=track_start,
+        run_multi=run_multi,
     )
 
 
@@ -169,7 +189,8 @@ def run_restart_multid_fullrank(
         model_args=None,
         step_size=5e-4,
         track_every=1,
-        guide_kwargs=None):
+        guide_kwargs=None,
+        track_start=None):
     del param_name
     return _run_restart_numpyro(
         seed=seed,
@@ -188,6 +209,7 @@ def run_restart_multid_fullrank(
         model_args=model_args,
         track_every=track_every,
         guide_kwargs=guide_kwargs,
+        track_start=track_start,
     )
 
 
@@ -235,7 +257,9 @@ def run_restart_1d(
         model_args=None,
         step_size=5e-4,
         track_every=1,
-        guide_kwargs=None):
+        guide_kwargs=None,
+        track_start=None,
+        run_multi=True):
     return _run_restart_numpyro(
         seed=seed,
         model=model,
@@ -253,4 +277,6 @@ def run_restart_1d(
         model_args=model_args,
         track_every=track_every,
         guide_kwargs=guide_kwargs,
+        track_start=track_start,
+        run_multi=run_multi,
     )

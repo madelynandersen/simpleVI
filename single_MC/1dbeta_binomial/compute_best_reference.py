@@ -1,25 +1,19 @@
 """
 Adds Stan's saved ADVI random restarts as candidates for beta_config.json's
 "best variational approximation" (best_mean/best_std/best_method/best_elbo_np),
-alongside the existing numpyro/pymc/tfp-derived candidate already recorded
-there. Picks whichever single restart (from any method) scores highest,
-matching the convention single_MC/logistic_regression/compute_best_reference.py
-already uses -- and, like that script, routes the actual candidate scoring
-through modulars.utils.find_best_params rather than a separate bespoke loop,
-so this gets the same score_seed_by_restart=False fix (see modulars/utils.py):
-every candidate is scored with the same seed, so the winner is decided by
-genuine ELBO differences rather than by which candidate happened to get the
-more favorable Monte Carlo draw.
+alongside the numpyro/pymc/tfp candidate already recorded there, and keeps
+whichever single restart scores highest. As in
+single_MC/logistic_regression/compute_best_reference.py, scoring goes through
+modulars.utils.find_best_params with the same seed for every candidate.
 
 Stan's random-restart pipeline (modulars/stan_rr_test.py) only saves the
-constrained theta-space mean/std of each restart's posterior draws, not the
-unconstrained (mu, sigma) of its internal mean-field Normal(mu, sigma) ->
-sigmoid -> theta guide. Since beta_config.json's best_mean/best_std ARE that
-unconstrained (mu, sigma) (see random_restarts/elbo_space_stan.ipynb), the
-score_fn below inverts each Stan candidate's theta mean/std back to (mu,
-sigma) by moment matching a LogitNormal via the same Gauss-Hermite quadrature
-elbo_space_stan.ipynb uses, then scores with the same NumPyro
-TraceMeanField_ELBO fixed-guide scorer so the comparison is apples to apples.
+constrained theta-space mean/std of each restart's draws, not the
+unconstrained (mu, sigma) of its Normal(mu, sigma) -> sigmoid -> theta guide.
+beta_config.json's best_mean/best_std are that unconstrained (mu, sigma)
+(see random_restarts/elbo_space_stan.ipynb), so the score_fn below inverts each
+Stan candidate's theta mean/std to (mu, sigma) by moment matching a
+LogitNormal with Gauss-Hermite quadrature, then scores it with the same NumPyro
+TraceMeanField_ELBO fixed-guide scorer as the other packages.
 """
 from pathlib import Path
 import pickle

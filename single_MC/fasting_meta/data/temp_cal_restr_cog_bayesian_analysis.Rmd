@@ -1,0 +1,2980 @@
+---
+title: "statistical analysis using a Bayesian inference approach for project temp_cal_restr_cog"
+author: "CB"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r, results='hide',Message=FALSE} 
+#rm(list=ls())
+```
+parallelisation of sampling
+```{r}
+library(rstan)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+```{r}
+if (!require("pacman")) install.packages("pacman")
+
+if (!require("devtools")) {
+  install.packages("devtools")
+}
+#devtools::install_github("MathiasHarrer/dmetar")
+pacman::p_load(tidyverse,reshape2,metafor,ggplot2,openxlsx,brms,HDInterval,Rmisc,tidyr,tidybayes,dplyr,plyr,glue,stringr,forcats, dmetar,bayesplot,gridExtra,extraDistr,bayesmeta,scales,lubridate,irr)
+library(dmetar)
+```
+
+# Reading the data and formatting the dataframe
+```{r}
+df <- read.csv2("./data/temp_cal_restr_cog_DF.csv",sep=",")
+#df <- read.csv2("./data/temp_cal_restr_cog_DF_before_revision_2.csv",sep=",")
+
+df = subset(df,!is.na(es_id))
+
+#removing empty rows:
+df<-df[!apply(is.na(df),1,all),]
+
+
+#View(df)
+head(df)
+
+df$es<-as.numeric(df$es)
+df$es_var<-as.numeric(df$es_var)
+df$fasting_duration<-as.numeric(df$fasting_duration)
+df$N<-as.numeric(df$N)
+df$study_type<- as.factor(df$study_type) # group comparison is 1, cross_over is 2, repeated measures is 3
+df$has_food_stims<-as.factor(df$has_food_stims)
+df$risk<-factor(df$risk,levels=c("low","some","high"))
+df$share_female<-df$n_female/df$N
+df$BMI_baseline <- as.numeric(df$BMI_baseline)
+df$age <- as.numeric(df$age)
+
+df$has_food_stims<-factor(df$has_food_stims,
+                          levels=c("no_food","food_but_neutral", "food_mixed", "food_only"))
+
+#library(lubridate)
+#calculating time of day
+#df$time_of_day <- strptime(df$time_of_day, format="%H:%M")
+df$time_of_day<-hm(df$time_of_day)
+mean(df$time_of_day,na.rm=T)
+#df$time_of_day
+#converting to numeric
+df$time_of_day_num = time_length(df$time_of_day,unit="hour")
+
+```
+
+setting some graphical parameters
+```{r}
+#colour palette:
+cbPalette<-hcl.colors(n=10,palette="Dynamic")
+show_col(cbPalette)
+#APA theme for ggplots
+apatheme=theme_bw()+
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.border=element_blank(),
+        axis.line=element_line(),
+        text=element_text(family='Arial'),
+        legend.position='none')
+```
+
+# Some descriptive information
+using a function to get information on specific columns in df
+```{r,evaluate=FALSE}
+#defining the function
+get_summary_DataExtracted<-function(column_name,df){
+  uniq_vals<-df[!duplicated(df[,"study_id"]),][[column_name]] #getting 1st unique row per study and taking the column of interest
+  
+  #removing NAs, i.e. studies without information on that variable
+  uniq_vals<-uniq_vals[!is.na(uniq_vals)]
+
+  #CIs using Rmisc CI() function
+  CI=CI(uniq_vals)
+  
+  res=list(Mean=mean(uniq_vals),
+           SD=sd(uniq_vals),
+           Median=median(uniq_vals),
+           quantile95 = quantile(uniq_vals,c(0.025,0.975)),
+           range=range(uniq_vals),
+           Number_of_values=length(uniq_vals))
+  
+  return(res)}
+
+#number of articles
+max(df$article_id)
+#number of studies
+max(df$study_id)
+#number of estimates
+max(df$es_id)
+
+
+# applying the function to selected columns
+print(c("info for estimate values",get_summary_DataExtracted(column_name = "es",df=df)))
+
+CI(df$es)
+quantile(df$es,c(0.025,0.975),na.rm=T)
+quantile(df$es,na.rm=T)
+
+
+#selecting unique rows based on study ID (since N changes on study, not article level), then summing sample sizes
+df_uniqueSID = distinct(df, study_id, .keep_all = TRUE)
+#seemed like the additional sample from the updated search was too high but it's correct, there are more larger trials
+#View(df_uniqueSID[,c("study_id","N","full.reference")])
+#df_uniqueSID$full.reference
+#df_uniqueSID_UPDATED = subset(df_uniqueSID,full.reference!="")
+#sum(df_uniqueSID_UPDATED$N)
+sum(df_uniqueSID$N)
+
+table(df_uniqueSID$study_type)
+
+print(c("info for sample size",get_summary_DataExtracted(column_name = "N",df=df)))
+print(c("info for fasting duration",get_summary_DataExtracted(column_name = "fasting_duration",df=df)))
+print(c("info for time of day",get_summary_DataExtracted(column_name = "time_of_day_num",df=df)))
+#hm(get_summary_DataExtracted(column_name = "time_of_day_num",df=df)$Mean)
+#converting decimals to minutes
+0.38081*60
+0.78906*60
+# 8.525 18.325
+0.6*60
+0.3*60
+print(c("info for share female",get_summary_DataExtracted(column_name = "share_female",df=df)))
+print(c("info for age",get_summary_DataExtracted(column_name = "age",df=df)))
+print(c("info for BMI",get_summary_DataExtracted(column_name = "BMI_baseline",df=df)))
+df$group1_blood_glucose_mean=as.numeric(df$group1_blood_glucose_mean)
+#print(c("info for BG fasted",get_summary_DataExtracted(column_name = "group2_blood_glucose_mean",df=df,perc=95)))
+#print(c("info for BG fed",get_summary_DataExtracted(column_name = "group1_blood_glucose_mean",df=df,perc=95)))
+print(c("info for publication year",get_summary_DataExtracted(column_name = "publication_year",df=df)))
+
+
+```
+
+
+
+# ########################################
+
+# Statistical Models
+
+# Main model
+
+## main Model, frequentist
+- the main Model, defined in M_main below, has three levels.
+- the levels:
+    - 1st = sampling variance (specified in V=es_var)
+    - 2nd = intercept for each estimates
+    - 3rd = pooling by studies
+- all Models use a Normal distribution as the likelihood, so that es_i ~ Normal(Mu_i,sigma). 
+- fitted with restricted maximum likelihood estimation.
+    
+### interpretation of estimate: 
+_Positive values mean that cognitive performance in the satiated state is higher than in the fasted state._ 
+_Negative values mean that cognitive performance in the fasted state is higher than in the satiated state._
+
+
+```{r} 
+fM_main <- rma.mv(yi = es,                # the Hedge's g values
+                V = es_var,              # the variance around the estimate
+                data = df,
+                method = "REML",         # restricted maximum likelihood
+                level = 95,              # 95% CI
+                digits = 5,              # decimal points
+                slab = ref,              # study labels
+                tdist=TRUE,              # to use the Knapp-Hartung correction
+                
+             # Multilevel Model to handle sample dependency   
+                random = ~1 | study_id/es_id #es_id clustered by study_id
+             ) 
+summary(fM_main)
+```
+
+### frequentist I^2
+```{r}
+W <- diag(1/df$es_var)
+X <- model.matrix(fM_main)
+# W and X need to have same dimensions
+c(dim(W), dim(X))
+P <- W - W %*% X %*% solve(t(X) %*% W %*% X) %*% t(X) %*% W
+I2_statistic <- 100 * sum(fM_main$sigma2) / (sum(fM_main$sigma2) + 
+                                                 (fM_main$k-fM_main$p)/sum(diag(P)))
+print(c("I^2:",I2_statistic))
+```
+
+
+## bayesian approach using brms
+
+### prior elicidation
+```{r}
+plot(density(rnorm(1e4,mean=0,sd=1)),main="prior for intercept")
+plot(density(rhcauchy(1e4,sigma=0.5)),xlim=c(0,80),main="prior for SDs")
+```
+
+
+```{r}
+#priors
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd))
+# effect sizes = es, es_var = variance/SE, study_id = study level 
+bM_main = brm("es | se(es_var) ~ 1 + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000, #Rhat & ESS not good with default -> go up
+              save_pars = save_pars(all = TRUE),
+              file="bM_main",
+              file_refit = "on_change"
+              )
+#saveRDS(bM_main,"bM_main.RDS")        
+```
+
+```{r}
+#bM_main = readRDS("bM_main.RDS")
+summary(bM_main)
+
+## the estimated random effects for eache stiamte within studies
+#ranef(bM_main)$`study_id:es_id`
+
+##estimated random effects for each study-cluster
+study_ranef = data.frame(ranef(bM_main)$`study_id`)
+#median(study_ranef$Estimate.Intercept)
+
+bM_main_draws = as_draws_df(bM_main)
+
+#percentage of draws below zero, indicating higher performance of fasted
+count(bM_main_draws$Intercept<0)
+sum(bM_main_draws$Intercept<0)/length(bM_main_draws$Intercept)
+
+```
+for intercept, Rhat was initially too high with 1.05 (assume 1.01 as acceptance threshold, based on STAN recommendation) & especially bulk ESS too low -> doubled iterations from default -> Rhat acceptable, ESS better.
+Vehtari: if R-hat & ESS improve by increasing iter, no need to worry (https://discourse.mc-stan.org/t/low-ess-and-high-rhat-for-random-intercept-slope-simulation-rstan-and-rstanarm/9985/7)
+
+__*sensitivity analysis below__
+
+## chain & fit diagnostics
+```{r}
+pairs(bM_main)
+
+plot(bM_main)
+
+pp_check(bM_main)
+```
+
+
+## extracting samples
+ sd_study_id__Intercept for the between-study heterogeneity τ on study level.
+```{r}
+post_samples = as.data.frame(bM_main,variable= c("b_Intercept", "sd_study_id__Intercept","sd_study_id:es_id__Intercept")) 
+```
+
+### plotting posterior samples
+making 3 rows * 2 cols grid with posterior density in one column, chains in the other for Intercept, sd on both levels
+```{r}
+######## posterior densitiy plots:
+p_Intercept_pd = ggplot(aes(x = b_Intercept), data = post_samples) +
+    geom_density(fill = cbPalette[1],                # set the color
+               color = cbPalette[1], alpha = 0.7) +  
+  geom_point(y = 0,                               # add point at mean
+             x = median(post_samples$b_Intercept)) +
+  ylim(0,15)+
+  #add vertical line for zero
+  geom_vline(xintercept=0,lty=2)+
+  labs(x = expression(alpha),
+       y = expression(Density),
+       title="A. Intercept") +
+  apatheme
+
+p_sd_study_pd = ggplot(aes(x = sd_study_id__Intercept), data = post_samples) +
+  geom_density(fill = cbPalette[3],               # set the color
+               color = cbPalette[3], alpha = 0.7) +  
+  # add point at mean
+  geom_point(y = 0, 
+             x = median(post_samples$sd_study_id__Intercept)) +        
+  xlim(0,0.5)+ ylim(0,15)+
+  
+    labs(x = expression(tau), #expression(tau*" study level")
+       y = expression(Density),
+       title="B. SD study") +
+  apatheme
+
+p_sd_es_pd = ggplot(aes(x = `sd_study_id:es_id__Intercept`), data = post_samples) +
+  geom_density(fill = cbPalette[5],               # set the color
+               color = cbPalette[5], alpha = 0.7) +  
+  geom_point(y = 0, # add point at mean
+             x = median(post_samples$`sd_study_id:es_id__Intercept`)) + 
+  xlim(0,0.5)+ylim(0,16)+
+    labs(x = expression(tau),#expression(tau*" estimate level")
+       y =expression(Density),
+       title = "C. SD es") +
+  apatheme
+
+######## trace plots:
+# getting trace data in nice format for plotting
+p_trace_data = mcmc_trace_data(bM_main,pars=c("b_Intercept","sd_study_id__Intercept","sd_study_id:es_id__Intercept"))
+p_trace_data$chain = factor(p_trace_data$chain)
+unique(p_trace_data$warmup)#no warm-up data in there - good
+
+## plotting intercept trace
+p_Intercept_trace = ggplot(data=subset(p_trace_data,parameter=="b_Intercept"),
+       aes(x=iteration,y=value,colour=chain))+
+  geom_line()+scale_colour_manual(values=alpha(c(cbPalette[1],cbPalette[3],cbPalette[5],cbPalette[7]),0.6))+
+  xlab("Iteration")+ylab("Value")+ apatheme
+#p_Intercept_trace
+
+#sd on study level trace
+p_sd_study_trace = ggplot(data=subset(p_trace_data,parameter=="sd_study_id__Intercept"),
+       aes(x=iteration,y=value,colour=chain))+
+  geom_line()+scale_colour_manual(values=alpha(c(cbPalette[1],cbPalette[3],cbPalette[5],cbPalette[7]),0.6))+
+  xlab("Iteration")+ylab("Value")+ apatheme
+#p_sd_study_trace
+
+#sd on es level trace
+p_sd_es_trace = ggplot(data=subset(p_trace_data,parameter=="sd_study_id:es_id__Intercept"),
+       aes(x=iteration,y=value,colour=chain))+
+  geom_line()+scale_colour_manual(values=alpha(c(cbPalette[1],cbPalette[3],cbPalette[5],cbPalette[7]),0.6))+
+  xlab("Iteration")+ylab("Value")+ apatheme
+#p_sd_es_trace
+
+
+grid.arrange(p_Intercept_pd,p_Intercept_trace,
+             p_sd_study_pd,p_sd_study_trace,
+             p_sd_es_pd,p_sd_es_trace, nrow=3,ncol=2)
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/main_model_posterior.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+grid.arrange(p_Intercept_pd,p_Intercept_trace,
+             p_sd_study_pd,p_sd_study_trace,
+             p_sd_es_pd,p_sd_es_trace, nrow=3,ncol=2)
+dev.off()
+
+png(filename = "./data/main_model_posterior.png", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+grid.arrange(p_Intercept_pd,p_Intercept_trace,
+             p_sd_study_pd,p_sd_study_trace,
+             p_sd_es_pd,p_sd_es_trace, nrow=3,ncol=2)
+dev.off()
+
+```
+
+```{r}
+#bayes_factor(bM_main_fixeff,bM_main)
+
+#trying leave-one-out cross validation instead
+#bM_main <- add_criterion(bM_main, c("loo", "waic"),
+#                         moment_match=T)#,
+                         #overwrite=T) #CRASHES R
+# moment match doesn't work (on Mac at least)
+#bM_main_loo = loo(bM_main,save_psis=T,moment_match = T)
+#print(bM_main_loo)
+#print(bM_main$criteria$loo)
+#plot(bM_main$criteria$loo)
+#bM_main_fixeff <- add_criterion(bM_main_fixeff, c("loo", "waic"),moment_match=T)
+#print(bM_main_fixeff$criteria$loo)
+
+#loo_compare(bM_main, bM_main_fixeff)
+#print(waic(bM_main,bM_main_fixeff))
+```
+_random effects model is the favourable model_
+__but! Pareto k diagnostic of bM_main is poor! might be unreliable elpd result__
+
+```{r}
+## getting and indexing draws by study id
+study_draws <- spread_draws(bM_main, r_study_id[study_id,], b_Intercept) %>% 
+  mutate(b_Intercept = r_study_id + b_Intercept)
+study_draws$study_id = factor(study_draws$study_id)
+head(study_draws)
+
+## adding reference labels for plotting
+#df$study_id_4plot = df %>% group_by(ref) 
+
+forest_data = merge(
+                        study_draws,
+                        df[,c("study_id","ref")],
+                        by = "study_id",
+                        all = T)
+#subset(forest_data,study_id=="38")
+
+```
+
+splitting the data in half to plot on two pages
+_need to add the pooled effect here probably, gets lost otherwise_
+```{r}
+#might need to order by study id again to ensure that draws are in right order
+forest_data = forest_data[order(forest_data$study_id),]
+#finding position where study_id is 38 for first time, and then setting index to row before
+index <- which(forest_data$study_id == 38)[1]-1
+#selecting all data up to index
+forest_data1 <- forest_data[1:index, ]
+#View(subset(forest_data1,study_id==38))
+#forest_data_summary1 <- forest_data_summary[1:index, ]
+#selecting all data from index to end
+#need to add +1 here so that first occurance of study 38 is selected
+forest_data2 <- forest_data[index+1:nrow(forest_data), ]
+#View(subset(forest_data2,study_id==38))
+#table(forest_data2$study_id)
+#forest_data_summary2 <- forest_data_summary[index:nrow(forest_data_summary), ]
+
+
+## adding pooled effect & ordering by study id, to both dfs, split
+# done here so that above split is not influenced by pooled effect draws(?)
+#getting overall estimate draws
+pooled_effect_draws <- spread_draws(bM_main, b_Intercept) %>% 
+  mutate(study_id = "Pooled Effect")
+#adding column to have same dimensions as study_draws
+pooled_effect_draws$r_study_id = 0 #no distance from Int to studies
+pooled_effect_draws$study_id = factor(pooled_effect_draws$study_id)
+pooled_effect_draws$ref="Pooled Effect"
+#head(pooled_effect_draws)
+
+
+## adding to split data
+forest_data1 = rbind(forest_data1,pooled_effect_draws)
+#unique(forest_data1$ref)
+#forest_data1$ref = ifelse(forest_data1$study_id=="Pooled Effect",
+#                         "Pooled Effect",
+#                         forest_data1$ref)
+#(forest_data1,forest_data1$ref=="Pooled Effect")
+
+### forest data summary
+## calculating 95% Cred Is with HDI, saving in extra df
+forest_data_summary1 <- group_by(forest_data1, study_id) %>% 
+  median_hdi(b_Intercept)
+
+#adding ref column 
+forest_data_summary1 = merge(
+                        forest_data_summary1,
+                        df[,c("study_id","ref")],
+                        by = "study_id",
+                        all.x = T)
+forest_data_summary1$ref = ifelse(forest_data_summary1$study_id=="Pooled Effect",
+                         "Pooled Effect",
+                         forest_data_summary1$ref)
+
+
+
+
+# second half
+forest_data2 = rbind(forest_data2,pooled_effect_draws)
+#unique(forest_data2$ref)
+
+#forest_data2$ref = ifelse(forest_data2$study_id=="Pooled Effect",
+#                         "Pooled Effect",
+#                         forest_data2$ref)
+
+### forest data summary
+## calculating 95% Cred Is with HDI, saving in extra df
+forest_data_summary2 <- group_by(forest_data2, study_id) %>% 
+  median_hdi(b_Intercept)
+
+#adding ref column 
+forest_data_summary2 = merge(
+                        forest_data_summary2,
+                        df[,c("study_id","ref")],
+                        by = "study_id",
+                        all.x = T)
+forest_data_summary2$ref = ifelse(forest_data_summary2$study_id=="Pooled Effect",
+                         "Pooled Effect",
+                         forest_data_summary2$ref)
+
+#subset(forest_data2,forest_data2$ref=="Pooled Effect")
+#ggplot(forest_data_summary2,aes(x=study_id))+geom_histogram(stat="count")
+
+# selecting unique lines for summary so that isn't plotted repeatedly in right hand column below (doesn't look good)
+forest_data_summary1 = unique(forest_data_summary1)
+forest_data_summary2 = unique(forest_data_summary2)
+```
+
+## reordering data form plot
+```{r}
+#reordering ref factor
+order1 = unique(forest_data1[order(forest_data1$ref),]$ref) #sorting alphabetically, getting refs
+order1 = order1[order1 != "Pooled Effect"] #removing poolled effect
+order1 = append(order1,"Pooled Effect") #adding pooled effect at end
+order1 = rev(order1) #reversing order
+#order1
+order2 = unique(forest_data2[order(forest_data2$ref),]$ref) #sorting alphabetically, getting refs
+order2 = order2[order2 != "Pooled Effect"] #removing poolled effect
+order2 = append(order2,"Pooled Effect") #adding pooled effect at end
+order2 = rev(order2) #reversing order
+#order2 = order2[!is.na(order2)]
+
+forest_data1$ref = factor(forest_data1$ref, levels=order1)
+forest_data_summary1$ref = factor(forest_data_summary1$ref, levels=order1)
+forest_data1$is_pooled_eff = factor(ifelse(forest_data1$ref=="Pooled Effect",1,0))
+
+forest_data2$ref = factor(forest_data2$ref, levels=order2)
+forest_data_summary2$ref = factor(forest_data_summary2$ref, levels=order2)
+forest_data2$is_pooled_eff = factor(ifelse(forest_data2$ref=="Pooled Effect",1,0))
+
+forest_data2 = subset(forest_data2,ref!="NA")
+forest_data_summary2 = subset(forest_data_summary2,ref!="NA")
+
+```
+
+not split, all together
+```{r}
+## adding to split data
+forest_data = rbind(forest_data,pooled_effect_draws)
+#unique(forest_data1$ref)
+#forest_data1$ref = ifelse(forest_data1$study_id=="Pooled Effect",
+#                         "Pooled Effect",
+#                         forest_data1$ref)
+#(forest_data1,forest_data1$ref=="Pooled Effect")
+
+### forest data summary
+## calculating 95% Cred Is with HDI, saving in extra df
+forest_data_summary <- group_by(forest_data, study_id) %>% 
+  median_hdi(b_Intercept)
+
+#adding ref column 
+forest_data_summary = merge(
+                        forest_data_summary,
+                        df[,c("study_id","ref")],
+                        by = "study_id",
+                        all.x = T)
+forest_data_summary$ref = ifelse(forest_data_summary$study_id=="Pooled Effect",
+                         "Pooled Effect",
+                         forest_data_summary$ref)
+
+forest_data_summary = unique(forest_data_summary)
+
+#reordering ref factor
+order = unique(forest_data[order(forest_data$ref),]$ref) #sorting alphabetically, getting refs
+order = order[order != "Pooled Effect"] #removing poolled effect
+order = append(order,"Pooled Effect") #adding pooled effect at end
+order = rev(order) #reversing order
+#order1
+
+forest_data$ref = factor(forest_data$ref, levels=order)
+forest_data_summary$ref = factor(forest_data_summary$ref, levels=order)
+forest_data$is_pooled_eff = factor(ifelse(forest_data$ref=="Pooled Effect",1,0))
+```
+```{r}
+library(ggridges)
+forestplot = ggplot(data = forest_data,
+          aes(b_Intercept,y=ref))+
+  
+  # Add vertical lines for pooled effect and CI, and zero
+  #median intercept
+  geom_vline(xintercept = fixef(bM_main)[1, 1], 
+             color = cbPalette[4], size = 0.3) +
+  #95%CI
+  geom_vline(xintercept = fixef(bM_main)[1, 3:4], 
+             color = cbPalette[4], linetype = 2) +
+  # zero line
+  geom_vline(xintercept = 0, color = "black", 
+             size = 0.3)+
+  
+  # Add densities
+  geom_density_ridges(aes(fill=is_pooled_eff),#fill=cbPalette[7],
+                      rel_min_height = 0.01, 
+                      col = NA, scale = 1,
+                      alpha = 0.8) +
+  ##change fill of densities
+  scale_fill_manual(values=c(cbPalette[7],cbPalette[4]))+
+  
+  # add point intervals
+  geom_pointinterval(data = forest_data_summary,
+                     aes(x=b_Intercept, y = ref,
+                         xmin = .lower, xmax = .upper),
+                      size = 0.3)+
+  
+  # Add text and labels
+  geom_text(data = mutate_if(forest_data_summary, 
+                             is.numeric, round, 2),
+    aes(label = glue("{b_Intercept} [{.lower}, {.upper}]"), 
+        x = Inf), 
+    hjust = "inward",
+    size=1.5) +
+  
+  labs(x = "Standardized Mean Difference", # summary measure
+       y = element_blank()) +
+  
+  # Adjust y-axis spacing (doesn't work)
+  #scale_y_discrete(expand = expansion(mult = c(0.1, 0.1))) +
+   # 1) tighten up the x axis margins
+  #scale_x_continuous(
+  #  expand = expansion(mult = c(0.01, 0.05))  # only 1% padding on left, 5% on right
+  #) +
+  
+  xlim(c(-0.6,0.7))+
+  scale_x_continuous(
+    breaks = seq(-0.6, 0.6, by = 0.2),labels = label_number(accuracy = 0.1))+
+  apatheme + theme(axis.text.y=element_text(size=4))
+
+forestplot
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/forestplot_together.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 10, res = 600,units ="cm")
+forestplot
+dev.off()
+
+png(filename = "./data/forestplot_together.png", 
+    width = 16, height = 12.8, 
+    pointsize = 10, res = 600,units ="cm")
+forestplot
+dev.off()
+
+```
+
+```{r}
+
+
+forestplot1 = ggplot(data = forest_data1,
+          aes(b_Intercept,y=ref))+
+  
+  # Add vertical lines for pooled effect and CI, and zero
+  #median intercept
+  geom_vline(xintercept = fixef(bM_main)[1, 1], 
+             color = cbPalette[4], size = 0.5) +
+  #95%CI
+  geom_vline(xintercept = fixef(bM_main)[1, 3:4], 
+             color = cbPalette[4], linetype = 2) +
+  # zero line
+  geom_vline(xintercept = 0, color = "black", 
+             size = 0.5)+
+  
+  # Add densities
+  geom_density_ridges(aes(fill=is_pooled_eff),#fill=cbPalette[7],
+                      rel_min_height = 0.01, 
+                      col = NA, scale = 1,
+                      alpha = 0.8) +
+  ##change fill of densities
+  scale_fill_manual(values=c(cbPalette[7],cbPalette[4]))+
+  
+  # add point intervals
+  geom_pointinterval(data = forest_data_summary1,
+                     aes(x=b_Intercept, y = ref,
+                         xmin = .lower, xmax = .upper),
+                      size = 0.5)+
+  
+  # Add text and labels
+  geom_text(data = mutate_if(forest_data_summary1, 
+                             is.numeric, round, 2),
+    aes(label = glue("{b_Intercept} [{.lower}, {.upper}]"), 
+        x = Inf), 
+    hjust = "inward",
+    size=2) +
+  
+  labs(x = "Standardized Mean Difference", # summary measure
+       y = element_blank()) +
+  
+  # Adjust y-axis spacing (doesn't work)
+  #scale_y_discrete(expand = expansion(mult = c(0.1, 0.1))) +
+  
+  apatheme + theme(axis.text.y=element_text(size=6))
+
+forestplot1
+## plot two
+
+forestplot2 = ggplot(data = forest_data2,
+          aes(b_Intercept,ref))+
+  
+  # Add vertical lines for pooled effect and CI, and zero
+  #median intercept
+  geom_vline(xintercept = fixef(bM_main)[1, 1], 
+             color = cbPalette[4], size = 0.5) +
+  #95%CI
+  geom_vline(xintercept = fixef(bM_main)[1, 3:4], 
+             color = cbPalette[4], linetype = 2) +
+  # zero line
+  geom_vline(xintercept = 0, color = "black", 
+             size = 0.5)+
+  
+  # Add densities
+  geom_density_ridges(aes(fill=is_pooled_eff),#fill = cbPalette[7], 
+                      rel_min_height = 0.01, 
+                      col = NA, scale = 1,
+                      alpha = 0.8) +
+  ##change fill
+  scale_fill_manual(values=c(cbPalette[7],cbPalette[4]))+
+  
+  # add point itnerval
+  geom_pointinterval(data = forest_data_summary2,
+                     aes(x=b_Intercept, y = ref,
+                         xmin = .lower, xmax = .upper),
+                      size = 0.5)+
+  
+  # Add text and labels
+  geom_text(data = mutate_if(forest_data_summary2, 
+                             is.numeric, round, 2),
+    aes(label = glue("{b_Intercept} [{.lower}, {.upper}]"), 
+        x = Inf), hjust = "inward",
+    size=2) +
+  
+  labs(x = "Standardized Mean Difference", # summary measure
+       y = element_blank()) +
+  
+  apatheme+ theme(axis.text.y=element_text(size=6))
+
+forestplot2
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/forestplot1.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+forestplot1
+dev.off()
+##    -- .tiff file for publication  --
+tiff(filename = "./data/forestplot2.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+forestplot2
+dev.off()
+```
+
+
+# #####################
+
+# moderator anlysis
+
+##fasting duration
+```{r,results="hide",message=FALSE}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(12,100),class=b))
+
+bM_fdur = brm("es | se(es_var) ~ 1 + fasting_duration + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+              file="bM_fdur",file_refit="on_change")
+
+print(summary(bM_fdur),digits=4)
+```
+```{r}
+print(c("number of studies not specifying fasting duration:",length(unique(subset(df,is.na(df$fasting_duration))$study_id))))
+print(c("number of studies with fasting duration:",length(unique(subset(df,!is.na(df$fasting_duration))$study_id))))
+
+print(c("number of studies with fasting duration above 24h:",length(unique(subset(df,df$fasting_duration>24)$study_id))))
+df_longfast = subset(df,df$fasting_duration>24)
+unique(df_longfast$ref)
+unique(df_longfast$fasting_duration)
+```
+Population-Level Effects: 
+                 Estimate Est.Error l-95% CI u-95% CI   Rhat
+Intercept          0.1035    0.0383   0.0298   0.1817 1.0065
+fasting_duration  -0.0041    0.0010  -0.0060  -0.0022 1.0037
+                 Bulk_ESS Tail_ESS
+Intercept             490      384
+fasting_duration     1350     1131
+
+
+### fasting duration with outlier removed
+
+####visual inspection
+```{r}
+#subset(df,study_id==61)$fasting_duration
+df_uniqueFDur = distinct(df, fasting_duration, .keep_all = TRUE)
+#use unique SID df (see Yang study)
+ggplot(df_uniqueSID, aes(x = fasting_duration)) +
+  geom_histogram(bins = 50,fill = cbPalette[7]) +
+  xlab("Fasting duration (h)") +
+  ylab("Number of studies") +
+  scale_x_continuous(breaks = c(12,seq(0, max(df_uniqueSID$fasting_duration, na.rm = TRUE), by = 24))) +
+  apatheme
+
+```
+
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+bM_fdur_r = brm("es | se(es_var) ~ 1 + fasting_duration + (1|study_id/es_id)",
+              prior=priors,
+              data= subset(df,fasting_duration<60),#subset(df,study_id!=61),
+              iter=8000, #low ESS with 4000
+              file="bM_fdur_r",file_refit="on_change")
+```
+
+```{r}
+print(summary(bM_fdur_r),digits=3)
+```
+
+```{r}
+mcmc_trace(bM_fdur_r,pars=c("b_Intercept","sd_study_id__Intercept","sd_study_id:es_id__Intercept","b_fasting_duration"))
+```
+
+
+### plotting with emmeans
+https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/#different-kinds-of-average-predictions-with-multilevel-models
+
+__redo that more thoughtfully__
+
+first, trying it without considering random effects, then with random effects
+```{r}
+
+grand_mean_fdur = bM_fdur_r %>%
+  epred_draws(
+    #feeding new data in for predictions
+    newdata=expand_grid( #is a 1 * 48 vector
+                        es_var = mean(df$es_var), #have to add sth for es_var, taking mean, seems rather crude
+                                  fasting_duration=seq(0,48,by=1)), #making sequence of fdur values
+              re_formula=NA) #rto indicate that random effects are ignored
+
+
+range(df$es_var)
+quantile(df$es_var)
+#alternatively trying to use original data more
+grand_mean_fdur = bM_fdur_r %>%
+  epred_draws(
+    newdata=expand_grid( # is a N(es var) * N(fasting duration) matrix
+                        es_var = seq(min(df$es_var),max(df$es_var),by=.05), #redoing range of es_var values
+                                  fasting_duration=seq(0,48,by=2)), #making sequence of fdur values
+              re_formula=NA) #to indicate that random effects are ignored
+
+#ggplot(grand_mean_fdur,aes(x=fasting_duration,y=.epred))+stat_lineribbon()
+
+mean(grand_mean_fdur$.epred)
+
+# with random effects
+grand_mean_fdur_ran = bM_fdur_r %>%
+  epred_draws(
+    newdata=expand_grid( # is a N(es var) * N(fasting duration) matrix
+                        es_var = seq(min(df$es_var),max(df$es_var),by=.1), #redoing range of es_var values
+                                  fasting_duration=seq(0,48,by=4), #making sequence of fdur values
+                        study_id =1,#seq(1,10,by=1),#adding some study ids
+                        es_id =seq(1,4,by=1)),#adding some es ids
+              re_formula=NULL, #to indicate that random effects are incorporated
+              allow_new_levels=T) #since some of the study_ids in 1-10 are not in the data
+#ggplot(grand_mean_fdur_ran,aes(x=fasting_duration,y=.epred))+stat_lineribbon()
+
+mean(grand_mean_fdur_ran$.epred)
+```
+
+adding raw data to plot of grand mean
+(using fixed effect estimate)
+```{r}
+#excluding studies without fasting duration (probably not needed)
+df_fdur = subset(df,!is.na(df$fasting_duration))
+df_fdur = subset(df_fdur,fasting_duration<60)
+#excluding outlier
+#df_fdur = subset(df_fdur,study_id!=XX) #study id changed
+
+p = ggplot(data=NULL, aes(x=fasting_duration, y=es)) +
+  stat_lineribbon(data=grand_mean_fdur, aes(x=fasting_duration, y=.epred), 
+                  fill=cbPalette[7], color="grey30", alpha=0.5) +
+  geom_point(data=df_fdur, aes(size=es_var), colour="grey30",fill=cbPalette[7], alpha=0.5,pch=21)+
+  ylim(-1.5,1.5)+
+        xlab("Fasting duration in hours")+ylab("SMD")+apatheme#+
+
+p
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/fasting_duration_grand_mean_pred.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+p
+dev.off()
+```
+## fasting duration with polynomial term
+linear model may not be optimal
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+bM_fdur_quad = brm("es | se(es_var) ~ 1 + I(fasting_duration^2) + (1|study_id/es_id)",
+              prior=priors,
+              data= df_fdur,#subset(df,study_id!=61),
+              iter=8000,
+              file="bM_fdur_quad",file_refit="on_change")
+
+```
+```{r}
+print(summary(bM_fdur_quad),digits=4)
+```
+
+```{r}
+p_quad = ggplot(data=df_fdur,#subset(df,!is.na(df$fasting_duration)),
+                aes(x=fasting_duration,y=es))+
+  stat_smooth(formula=y~poly(x,2),
+              method="lm",colour="black",fill=cbPalette[7])+
+  geom_point(aes(size=es_var),colour=cbPalette[7],alpha=0.5)+
+  scale_size_continuous(range = c(1, 5))+
+  ylim(-1.5,1.5)+
+        xlab("Fasting duration in hours")+ylab("SMD")+labs(title="Quadratic regression model")+
+  apatheme+theme(legend.position = "none")
+
+p_quad
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/fasting_duration_quadratic.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+p_quad
+dev.off()
+```
+for reduced sample
+```{r}
+p_quad = ggplot(data=df_fdur,aes(x=fasting_duration,y=es))+
+  stat_smooth(formula=y~poly(x,2),
+              method="lm",colour="black",fill=cbPalette[7])+
+  geom_point(aes(size=es_var),colour=cbPalette[7],alpha=0.5)+
+  scale_size_continuous(range = c(1, 5))+
+  ylim(-1.5,1.5)+
+        xlab("Fasting duration in hours")+ylab("SMD")+labs(title="Quadratic regression model")+
+  apatheme+theme(legend.position = "none")
+
+p_quad
+
+
+#with 4 natural splines
+p_splines = ggplot(data=df_fdur,aes(x=fasting_duration,y=es))+
+  stat_smooth(formula=y~splines::ns(x,4),
+              method="lm",colour="black",fill=cbPalette[7])+
+  geom_point(aes(size=es_var),colour=cbPalette[7],alpha=0.5)+
+  scale_size_continuous(range = c(1, 5))+
+  ylim(-1.5,1.5)+
+        xlab("Fasting duration in hours")+ylab("SMD")+labs(title="Natural spline model")+
+  apatheme+theme(legend.position = "none")
+
+p_splines
+
+
+library(ggpubr)
+p = ggarrange(p_quad,p_splines,
+             ncol=2,nrow=1)
+p
+#ggsave("alternative models fasting duration for revision.png",p)
+```
+
+## Time of Day
+```{r}
+ggplot(df,aes(x=time_of_day_num,y=fasting_duration))+geom_point()+ylim(0,50)
+cor.test(df$time_of_day_num,df$fasting_duration)
+
+#number of studies with ToD info
+sum(!is.na(df_uniqueSID$time_of_day))
+```
+Model
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+bM_ToD = brm("es | se(es_var) ~ 1 + time_of_day_num + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+              file="bM_ToD",file_refit="on_change")
+summary(bM_ToD)
+```
+```{r}
+bM_ToD_fdur_inter = brm("es | se(es_var) ~ 1 + time_of_day_num*fasting_duration + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+              file="bM_ToD_fdur_inter",file_refit="on_change")
+summary(bM_ToD_fdur_inter)
+
+```
+
+
+
+
+
+## cognitive domain
+number of effect sizes per domain
+```{r}
+table(df$cognitive_domain)
+```
+
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+unique(df$cognitive_domain)
+
+bM_cog = brm("es | se(es_var) ~ 1 + cognitive_domain + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+             file="bM_cog",file_refit="on_change")
+bM_cog_fit = as.data.frame(bM_cog)
+```
+
+```{r}
+summary(bM_cog)
+```
+
+```{r}
+#str(bM_cog$fit)
+
+median(bM_cog_fit$sd_study_id__Intercept)
+median(bM_cog_fit$`sd_study_id:es_id__Intercept`)
+
+#for main model:
+bM_main_fit = as.data.frame(bM_main)
+median(bM_main_fit$sd_study_id__Intercept)
+median(bM_main_fit$`sd_study_id:es_id__Intercept`)
+
+#reduction in heterogeneity, tau:
+## on study level
+red_tau_stud=median(bM_main_fit$sd_study_id__Intercept - bM_cog_fit$sd_study_id__Intercept)
+##on es level
+red_tau_es=median(bM_main_fit$`sd_study_id:es_id__Intercept`-bM_cog_fit$`sd_study_id:es_id__Intercept`)
+## as percentage
+red_tau_stud/median(bM_main_fit$sd_study_id__Intercept)*100
+red_tau_es/median(bM_main_fit$`sd_study_id:es_id__Intercept`)*100
+```
+
+
+### posterior draws cognitive domain
+```{r}
+posterior_cog = as.data.frame(bM_cog,variable= c("b_Intercept", "b_cognitive_domaincognitive_flexibility","b_cognitive_domaingeneral_executive_function", "b_cognitive_domaininhibitory_control","b_cognitive_domainlongMterm_memory","b_cognitive_domainperceptual_accuracy","b_cognitive_domainworking_memory",
+                                                    "sd_study_id__Intercept","sd_study_id:es_id__Intercept")) 
+#shortening column names
+names(posterior_cog) <- gsub("b_cognitive_domain", "b_", names(posterior_cog))
+
+
+#calculating values by adding coefficients to Intercept
+posterior_cog$attention = posterior_cog$b_Intercept
+posterior_cog$cognitive_flexibility = posterior_cog$b_Intercept+posterior_cog$b_cognitive_flexibility
+posterior_cog$general_executive_function = posterior_cog$b_Intercept+posterior_cog$b_general_executive_function
+posterior_cog$inhibitory_control = posterior_cog$b_Intercept + posterior_cog$b_inhibitory_control
+posterior_cog$long_term_memory = posterior_cog$b_Intercept +posterior_cog$b_longMterm_memory
+posterior_cog$perceptual_accuracy = posterior_cog$b_Intercept + posterior_cog$b_perceptual_accuracy
+posterior_cog$working_memory =  posterior_cog$b_Intercept + posterior_cog$b_working_memory 
+
+## calculating median, SE  and 95% Cred Int
+
+
+posterior_cog_4plot = pivot_longer(posterior_cog,cols=c("attention","cognitive_flexibility","general_executive_function","inhibitory_control","long_term_memory","perceptual_accuracy","working_memory"))
+```
+
+
+#### calculating point estimates for each level of cognitive domain
+i.e. Intercept (which is attention) + level 2, ...
+```{r}
+#selecting columns with numeric values for round() to work
+round(point_interval(posterior_cog$attention,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog$inhibitory_control,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog$working_memory,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog$cognitive_flexibility,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog$perceptual_accuracy,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog$long_term_memory,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog$general_executive_function,.interval=hdi)[1,1:3],3)
+
+
+#bM_cog %>%spread_draws(b_Intercept) %>% median_qi(b_Intercept)
+
+sd(posterior_cog$attention)
+sd(posterior_cog$inhibitory_control)
+sd(posterior_cog$working_memory)
+sd(posterior_cog$cognitive_flexibility)
+sd(posterior_cog$perceptual_accuracy)
+sd(posterior_cog$long_term_memory)
+sd(posterior_cog$general_executive_function)
+
+```
+
+### plotting posterior samples
+```{r}
+ggplot(aes(x = b_Intercept), data = posterior_cog) +
+    geom_density(fill = cbPalette[1],                # set the color
+               color = cbPalette[1], alpha = 0.7) +  
+  geom_point(y = 0,                               # add point at mean
+             x = median(posterior_cog$b_Intercept)) +
+  labs(x = "attention",
+       y = element_blank())
+
+ggplot(aes(x = b_Intercept + b_cognitive_flexibility), data = posterior_cog) +
+    geom_density(fill = cbPalette[1],                # set the color
+               color = cbPalette[1], alpha = 0.7) +  
+  geom_point(y = 0,                               # add point at mean
+             x = median(posterior_cog$b_Intercept + posterior_cog$b_cognitive_flexibility)) +
+  labs(x = "cognitive flexibility",
+       y = element_blank())
+```
+
+### alternative cross-classified model for study & cog domain
+_benefit: can see how much variance is explained by difference between studies and how much by difference between cognitive domains of outcome_
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd))
+
+bM_cog_alt = brm("es | se(es_var) ~ 1 +  (1|study_id/es_id) +(1|cognitive_domain)",
+              prior=priors,
+              data= df,
+              iter=4000,
+             file="bM_cog_alt",file_refit="on_change")
+
+summary(bM_cog_alt)
+```
+-> splits the variance over the study/es_id and the different outcome domains
+
+plotting the variance:
+```{r}
+#label <-
+#  tibble(tau   = c(.13, .16),
+#         y     = c(15, 10),
+#         label = c("sigma['cognitive_domain']", "sigma['study_id']"))
+
+# wrangle
+
+posterior_samples_cog_cross_var = posterior_samples(bM_cog_alt) %>% 
+        select(starts_with("sd")) %>% 
+        gather(variance, tau) %>% 
+        mutate(variance = str_remove(variance, "sd_") %>% str_remove(., "__Intercept")) 
+  
+  # plot
+crossclassplot = ggplot(data = posterior_samples_cog_cross_var, aes(x = tau)) +
+  geom_density(aes(fill = variance), alpha = 0.7) +
+  scale_fill_manual(values = cbPalette, 
+                    labels = c("cognitive domain", "study id", "es id")) + 
+  apatheme + 
+  theme(legend.position = "bottom")
+
+
+crossclassplot
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/cross_classified_cog.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+crossclassplot
+dev.off()
+```
+interpretation: cognitive domain doesn't explain as much variance as either study id or es id
+
+
+## ridge plot for cognitive domains
+with cognitive domain as factor, not as grouping level
+```{r}
+library(ggridges)
+posterior_cog_4plot$cognitive_domain = factor(posterior_cog_4plot$name,levels=c("long_term_memory","general_executive_function","perceptual_accuracy","cognitive_flexibility","working_memory","inhibitory_control","attention"))
+
+levels(posterior_cog_4plot$cognitive_domain)
+#need to rename levels in df to be in line with posterior
+## first make factor
+df$cognitive_domain4plot = factor(df$cognitive_domain)
+## then rename the levels
+levels(df$cognitive_domain4plot)
+df$cognitive_domain4plot = plyr::revalue(df$cognitive_domain4plot,
+                                         c("long-term_memory"="long_term_memory" ))
+
+cog_dom_plot = ggplot(NULL) +
+  #ridge plot
+  geom_density_ridges(data=posterior_cog_4plot, aes(x = value, y = cognitive_domain, fill = cognitive_domain)) +
+  scale_fill_manual(values=cbPalette)+
+  #theme_ridges() +
+  
+  # adding points
+  geom_point(data=df,aes(x=es,y=cognitive_domain4plot),alpha=0.4)+
+  xlab("SMD")+ylab("Cognitive domain")+
+  
+  #adding zero line
+  geom_vline(xintercept=0,lty=2)+
+  
+  
+  # setting xlim (necessary because there are outliers stretching the graph)
+  #and scaling more precisely
+  scale_x_continuous(breaks=seq(from=-1,to=1,length.out=5), 
+                     limits=c(-1,1))+
+  
+scale_y_discrete(breaks=c("long_term_memory","general_executive_function","perceptual_accuracy","cognitive_flexibility","working_memory","inhibitory_control","attention"), labels=c("Long-term memory","Other exec. function","Perceptual accuracy","Cognitive flexibility","Working-memory","Inhibitory control","Attention"))+
+  apatheme
+
+cog_dom_plot
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/cognitive_domain_ridge_plot.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+cog_dom_plot
+dev.off()
+
+
+#control that points are assigned correctly to y-value levels
+## and to count outliers not shown in above plot
+#ggplot(df,aes(x=es,y=cognitive_domain4plot))+geom_point()+
+#  scale_x_continuous(breaks=seq(from=-2,to=2,length.out=10))#+xlim(c(-0.7,0.7))
+## yes - the pattern matches
+
+
+# to add barcode like points: (within geom_density_ridges)
+#jittered_points = TRUE,
+#    position = position_points_jitter(width = 0.05, height = 0),
+#    point_shape = '|', point_size = 3, point_alpha = 0.5, alpha = 0.7
+
+
+## how many outleirs not in this plot?
+df %>%
+  filter(es > 1) %>%
+  group_by(cognitive_domain) %>%
+  dplyr::summarise(Count = n())
+df %>%
+  filter(es < -1) %>%
+  group_by(cognitive_domain) %>%
+  dplyr::summarise(Count = n())
+```
+
+
+
+## food stimuli
+
+number of effect sizes per category
+```{r}
+table(df$has_food_stims)
+```
+
+```{r}
+# reordering levels of factor
+
+
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+bM_food = brm("es | se(es_var) ~ 1 + has_food_stims + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+             file="bM_food",file_refit="on_change")
+```
+
+```{r}
+summary(bM_food)
+```
+
+### posterior samples food stimuli
+```{r}
+posterior_food = as.data.frame(bM_food,variable= c("b_Intercept","b_has_food_stimsfood_but_neutral","b_has_food_stimsfood_mixed","b_has_food_stimsfood_only","sd_study_id__Intercept","sd_study_id:es_id__Intercept")) 
+
+#shortening column names
+names(posterior_food) <- gsub("b_has_food_stims", "b_", names(posterior_food))
+
+
+#calculating values by adding coefficients to Intercept
+posterior_food$no_food = posterior_food$b_Intercept
+posterior_food$food_but_neutral = posterior_food$b_Intercept+posterior_food$b_food_but_neutral 
+posterior_food$food_mixed = posterior_food$b_Intercept+posterior_food$b_food_mixed 
+posterior_food$food_only = posterior_food$b_Intercept+posterior_food$b_food_only
+
+# getting summaries for posterios
+round(point_interval(posterior_food$no_food,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_food$food_but_neutral,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_food$food_mixed,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_food$food_only,.interval=hdi)[1,1:3],3)
+
+sd(posterior_food$no_food)
+sd(posterior_food$food_but_neutral)
+sd(posterior_food$food_mixed)
+sd(posterior_food$food_only)
+
+```
+
+###ridge plot food stimuli
+```{r}
+#library(ggridges)
+posterior_food_4plot = pivot_longer(posterior_food,cols=c("no_food","food_but_neutral","food_mixed","food_only"))
+
+posterior_food_4plot$has_food_stims = factor(posterior_food_4plot$name,levels=c("no_food","food_but_neutral","food_mixed","food_only"))
+#df$has_food_stims
+
+p = ggplot(NULL) +
+  #adding ridges
+  geom_density_ridges(data=posterior_food_4plot, 
+                      aes(x = value, y = has_food_stims, fill = has_food_stims)) +
+  scale_fill_manual(values=cbPalette)+
+  theme_ridges() + 
+  # adding points
+  geom_point(data=df,aes(x=es,y=has_food_stims),alpha=0.4)+
+  
+  geom_vline(xintercept=0,lty=2)+
+  
+  xlab("SMD")+ylab("Food stimuli")+
+  
+  # setting xlim (necessary because there are outliers stretching the graph)
+  #and scaling more precisely
+  scale_x_continuous(breaks=seq(from=-1,to=1,length.out=5), 
+                     limits=c(-1,1))+
+scale_y_discrete(breaks=c("no_food","food_but_neutral","food_mixed","food_only"), labels=c("No food","Neutral\ncontrol","Mixed","Food\nonly"))+
+  apatheme
+
+p
+
+png(filename = "./data/ridge_plot_food_Stims.png", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/ridge_plot_food_Stims.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+
+
+## how many outleirs not in this plot?
+df %>%
+  filter(es > 1) %>%
+  group_by(has_food_stims) %>%
+  dplyr::summarise(Count = n())
+df %>%
+  filter(es < -1) %>%
+  group_by(has_food_stims) %>%
+  dplyr::summarise(Count = n())
+```
+
+## redoing models with nofood_and_neutral and foodmixed_and_foodonly
+```{r}
+bM_nofood_and_neutral = update(bM_main,
+                               newdata=                     subset(df,df$has_food_stims=="no_food"|df$has_food_stims=="food_but_neutral"),
+                               file="bM_nofood_and_neutral")
+
+bM_foodmixed_and_foodonly = update(bM_main, newdata=subset(df,df$has_food_stims=="food_mixed"|df$has_food_stims=="food_only"),
+                                   iter=8000,
+                                   file_refit="always",
+                                   file="bM_foodmixed_and_foodonly")
+
+```
+
+```{r}
+print(summary(bM_nofood_and_neutral),3)
+print(c("combined sample size of studies without food-stimuli/neutral ones:",sum(unique(df[df$has_food_stims=="no_food"|df$has_food_stims=="food_but_neutral",]$N))))
+
+summary(bM_foodmixed_and_foodonly)
+print(c("combined sample size of studies with food and mix:",sum(unique(df[df$has_food_stims=="food_only"|df$has_food_stims=="food_mixed",]$N))))
+
+```
+
+## cognitive domain * food stimuli
+
+### how do cognitive domains and use of food stimuli co-occur?
+```{r}
+temp_df = df[!duplicated(df[,"study_id"]),]
+table(temp_df$cognitive_domain,temp_df$has_food_stims)
+
+table(df$cognitive_domain,df$has_food_stims)
+
+#table(df$cognitive_domain,df$binary_food)
+
+table(df$cognitive_domain)
+```
+```{r}
+# cognitive domain + / * food_stim
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            #categorical variables
+            ##cognitive domain
+            prior(normal(0,100),class=b,coef=cognitive_domaincognitive_flexibility ),
+            prior(normal(0,100),class=b,coef=cognitive_domaingeneral_executive_function),
+            prior(normal(0,100),class=b,coef=cognitive_domaininhibitory_control ),
+            prior(normal(0,100),class=b,coef=cognitive_domainlongMterm_memory ),
+            prior(normal(0,100),class=b,coef=cognitive_domainperceptual_accuracy ),
+            prior(normal(0,100),class=b,coef=cognitive_domainworking_memory ),
+            ##food stimuli
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_but_neutral ),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_mixed ),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_only ))
+multiple_regr_formula="es | se(es_var) ~ 1 + cognitive_domain  + has_food_stims + (1|study_id/es_id)"
+
+bM_multi_cog_food_stim = brm(multiple_regr_formula,
+               prior= priors,
+               data=df,
+               file="bM_multi_cog_food_stim",file_refit="on_change")
+#prior_summary(bM_multi_cog_food_stim)
+```
+
+#### AS INTERACTION
+```{r}
+table(df$cognitive_domain,df$has_food_stims)
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            #categorical variables
+            ##cognitive domain
+            prior(normal(0,100),class=b,coef=cognitive_domaincognitive_flexibility ),
+            prior(normal(0,100),class=b,coef=cognitive_domaingeneral_executive_function),
+            prior(normal(0,100),class=b,coef=cognitive_domaininhibitory_control ),
+            prior(normal(0,100),class=b,coef=cognitive_domainlongMterm_memory ),
+            prior(normal(0,100),class=b,coef=cognitive_domainperceptual_accuracy ),
+            prior(normal(0,100),class=b,coef=cognitive_domainworking_memory ),
+            ##food stimuli
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_but_neutral ),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_mixed ),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_only ))
+multiple_regr_formula_inter="es | se(es_var) ~ 1 + cognitive_domain  * has_food_stims + (1|study_id/es_id)"
+
+bM_multi_cog_food_stim_inter = brm(multiple_regr_formula_inter,
+               prior= priors,
+               data=df,
+               file="bM_multi_cog_food_stim_inter",file_refit="on_change")
+
+
+
+```
+__works poorly__
+looking at table, there are many combinations without cases - maybe that's the problem. -> collapse food stim to two categories
+
+```{r}
+df$binary_food = ifelse(df$has_food_stims=="no_food"|df$has_food_stims=="food_but_neutral","no","yes")
+df$binary_food = factor(df$binary_food,levels=c("no","yes"))
+#View(df[,c("binary_food","has_food_stims")])
+#how is it dostributed now?
+table(df$cognitive_domain,df$binary_food)
+
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            #categorical variables
+            ##cognitive domain
+            prior(normal(0,100),class=b,coef=cognitive_domaincognitive_flexibility ),
+            prior(normal(0,100),class=b,coef=cognitive_domaingeneral_executive_function),
+            prior(normal(0,100),class=b,coef=cognitive_domaininhibitory_control ),
+            prior(normal(0,100),class=b,coef=cognitive_domainlongMterm_memory ),
+            prior(normal(0,100),class=b,coef=cognitive_domainperceptual_accuracy ),
+            prior(normal(0,100),class=b,coef=cognitive_domainworking_memory ),
+            ##food stimuli
+            prior(normal(0,100),class=b,coef=binary_foodyes))#,
+            #prior(normal(0,100),class=b,coef=binary_foodno)) #is intercept
+multiple_regr_formula_inter="es | se(es_var) ~ 1 + cognitive_domain  * binary_food + (1|study_id/es_id)"
+
+bM_multi_cog_binary_food_inter = brm(multiple_regr_formula_inter,
+              prior= priors,
+               data=df,
+               file="bM_multi_cog_binary_food_inter",file_refit="always",iter=4000)
+prior_summary(bM_multi_cog_binary_food_inter)
+```
+
+
+```{r}
+#summary(bM_multi_cog_food_stim)
+#summary(bM_multi_cog_food_stim_inter)#doesn't fit well
+summary(bM_multi_cog_binary_food_inter)
+```
+__use the binary food version!__
+now do pairwise comparisons for each cognitive domain and whether food stimuli were used.
+
+#### spelling out the interactions
+since we have 2 categorical variables, the interaction is a simple addition
+```{r}
+posterior_cog_food = as.data.frame(bM_multi_cog_binary_food_inter,variable= c("b_Intercept", "b_cognitive_domaincognitive_flexibility","b_cognitive_domaingeneral_executive_function", "b_cognitive_domaininhibitory_control","b_cognitive_domainlongMterm_memory","b_cognitive_domainperceptual_accuracy","b_cognitive_domainworking_memory",
+"b_binary_foodyes", "b_cognitive_domaincognitive_flexibility:binary_foodyes","b_cognitive_domaingeneral_executive_function:binary_foodyes", "b_cognitive_domaininhibitory_control:binary_foodyes","b_cognitive_domainlongMterm_memory:binary_foodyes","b_cognitive_domainperceptual_accuracy:binary_foodyes","b_cognitive_domainworking_memory:binary_foodyes",
+                                                    "sd_study_id__Intercept","sd_study_id:es_id__Intercept")) 
+#shortening column names
+names(posterior_cog_food) <- gsub("b_cognitive_domain", "b_", names(posterior_cog_food))
+#View(posterior_cog_food)
+
+#calculating values by spelling out interaction coefficients
+posterior_cog_food$attention_nofood = posterior_cog_food$b_Intercept #intercept is attention (as for initial cog domain model)*no food
+posterior_cog_food$attention_food = posterior_cog_food$b_binary_foodyes #going from intercept (attention + no food) to food -> attention+food
+
+posterior_cog_food$cognitive_flexibility_nofood = posterior_cog_food$b_Intercept+posterior_cog_food$b_cognitive_flexibility
+posterior_cog_food$cognitive_flexibility_food = posterior_cog_food$cognitive_flexibility_nofood + posterior_cog_food$`b_cognitive_flexibility:binary_foodyes`
+#control:
+#median(posterior_cog_food$cognitive_flexibility_nofood)
+#median(posterior_cog_food$cognitive_flexibility_food)
+#abs(median(posterior_cog_food$cognitive_flexibility_nofood))+median(posterior_cog_food$cognitive_flexibility_food)
+posterior_cog_food$general_executive_function_nofood = posterior_cog_food$b_Intercept+posterior_cog_food$b_general_executive_function
+posterior_cog_food$general_executive_function_food = posterior_cog_food$general_executive_function_nofood + posterior_cog_food$`b_general_executive_function:binary_foodyes`
+
+posterior_cog_food$inhibitory_control_nofood = posterior_cog_food$b_Intercept+posterior_cog_food$b_inhibitory_control
+posterior_cog_food$inhibitory_control_food = posterior_cog_food$inhibitory_control_nofood + posterior_cog_food$`b_inhibitory_control:binary_foodyes`
+
+posterior_cog_food$long_term_memory_nofood = posterior_cog_food$b_Intercept+posterior_cog_food$b_longMterm_memory
+posterior_cog_food$long_term_memory_food = posterior_cog_food$long_term_memory_nofood + posterior_cog_food$`b_longMterm_memory:binary_foodyes`
+
+posterior_cog_food$perceptual_accuracy_nofood = posterior_cog_food$b_Intercept+posterior_cog_food$b_perceptual_accuracy
+posterior_cog_food$perceptual_accuracy_food = posterior_cog_food$perceptual_accuracy_nofood + posterior_cog_food$`b_perceptual_accuracy:binary_foodyes`
+
+posterior_cog_food$working_memory_nofood = posterior_cog_food$b_Intercept+posterior_cog_food$b_working_memory
+posterior_cog_food$working_memory_food = posterior_cog_food$working_memory_nofood + posterior_cog_food$`b_working_memory:binary_foodyes`
+
+
+```
+
+
+#### calculating point estimates for each level of cognitive domain*food
+for table
+```{r}
+#selecting columns with numeric values for round() to work
+round(point_interval(posterior_cog_food$attention_nofood,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog_food$attention_food,.interval=hdi)[1,1:3],3)
+
+
+round(point_interval(posterior_cog_food$inhibitory_control_nofood,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog_food$inhibitory_control_food,.interval=hdi)[1,1:3],3)
+
+round(point_interval(posterior_cog_food$working_memory_nofood,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog_food$working_memory_food,.interval=hdi)[1,1:3],3)
+
+round(point_interval(posterior_cog_food$cognitive_flexibility_nofood,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog_food$cognitive_flexibility_food,.interval=hdi)[1,1:3],3)
+
+round(point_interval(posterior_cog_food$perceptual_accuracy_nofood,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog_food$perceptual_accuracy_food,.interval=hdi)[1,1:3],3)
+
+round(point_interval(posterior_cog_food$long_term_memory_nofood,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog_food$long_term_memory_food,.interval=hdi)[1,1:3],3)
+
+round(point_interval(posterior_cog_food$general_executive_function_nofood,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_cog_food$general_executive_function_food,.interval=hdi)[1,1:3],3)
+
+
+sd(posterior_cog_food$attention_nofood)
+sd(posterior_cog_food$attention_food)
+sd(posterior_cog_food$inhibitory_control_nofood)
+sd(posterior_cog_food$inhibitory_control_food)
+sd(posterior_cog_food$working_memory_nofood)
+sd(posterior_cog_food$working_memory_food)
+sd(posterior_cog_food$cognitive_flexibility_nofood)
+sd(posterior_cog_food$cognitive_flexibility_food)
+sd(posterior_cog_food$perceptual_accuracy_nofood)
+sd(posterior_cog_food$perceptual_accuracy_food)
+sd(posterior_cog_food$long_term_memory_nofood)
+sd(posterior_cog_food$long_term_memory_food)
+sd(posterior_cog_food$general_executive_function_nofood)
+sd(posterior_cog_food$general_executive_function_food)
+
+
+
+
+
+
+#bM_multi_cog_binary_food_inter %>%
+#  spread_draws(b_Intercept) %>%
+#  median_qi(b_Intercept)
+
+```
+
+#### plotting cog domain * food stimuli ridge plot
+```{r}
+#### preparing for plotting
+##pivoting to longer for plot
+posterior_cog_food_4plot = pivot_longer(posterior_cog_food,cols=c("attention_nofood","cognitive_flexibility_nofood","general_executive_function_nofood","inhibitory_control_nofood","long_term_memory_nofood","perceptual_accuracy_nofood","working_memory_nofood","attention_food","cognitive_flexibility_food","general_executive_function_food","inhibitory_control_food","long_term_memory_food","perceptual_accuracy_food","working_memory_food"))
+
+#creating columns for aes
+posterior_cog_food_4plot$Food = ifelse(endsWith(posterior_cog_food_4plot$name,"_nofood"),"No Food","Food")
+posterior_cog_food_4plot$cog_dom = gsub("_nofood|_food", "",posterior_cog_food_4plot$name)
+
+#reordering levels
+posterior_cog_food_4plot$cog_dom = factor(posterior_cog_food_4plot$cog_dom,levels=c("long_term_memory","general_executive_function","perceptual_accuracy","cognitive_flexibility","working_memory","inhibitory_control","attention"))
+#levels(posterior_cog_food_4plot$cog_dom)
+
+#need to rename levels in df to be in line with posterior (done above as well for cognitive domain)
+## first make factor
+df$cognitive_domain4plot2 = factor(df$cognitive_domain)
+## then rename the level for long term memory
+#levels(df$cognitive_domain4plot)
+df$cognitive_domain4plot2 = plyr::revalue(df$cognitive_domain4plot2,
+                                         c("long-term_memory"="long_term_memory" ))
+##reordering
+df$cognitive_domain4plot2 = factor(df$cognitive_domain4plot2,levels=c("long_term_memory","general_executive_function","perceptual_accuracy","cognitive_flexibility","working_memory","inhibitory_control","attention"))
+
+###
+# adding label for food stimuli use, to be in line with posterior label, then legend can be plotte dtog ether
+df$Food = factor(ifelse(df$binary_food=="no","No Food","Food"))
+
+#exclude general executive since there are not enough data points!
+#posterior_cog_food_4plot = subset(posterior_cog_food_4plot,cog_dom!="general_executive_function")
+# for df done in ggplot below directly
+
+p = ggplot(NULL) + #using two data sources -> specified in layers
+  
+  #adding ridges
+  geom_density_ridges(data=posterior_cog_food_4plot, 
+                      aes(x = value, y = cog_dom, fill = Food))+
+  scale_fill_manual(values=alpha(cbPalette,0.8))+
+  #theme_ridges()+ 
+  
+  # adding points
+  ## excluding the executive function domain as for posterior subset(df,cognitive_domain4plot2!="general_executive_function"),
+  geom_point(data=df,
+             aes(x=es,y=cognitive_domain4plot2,shape=Food),alpha=0.8)+
+  scale_shape_manual(values=c(4,1))+
+  
+  #adding zero vertical line
+  geom_vline(xintercept=0,lty=2)+
+  
+  #labels
+  xlab("SMD")+ylab("Cognitive domain")+
+  # setting xlim 
+  #(necessary because there are outliers stretching the graph)
+  #and scaling more precisely
+  scale_x_continuous(breaks=seq(from=-1,to=1,length.out=10), 
+                     limits=c(-1,1),
+                     labels = label_number(accuracy = 0.01))+#from scales package, to limit decimals
+  scale_y_discrete(breaks=c("long_term_memory","general_executive_function","perceptual_accuracy","cognitive_flexibility","working_memory","inhibitory_control","attention"),
+                   labels=c("Long-term memory","Other exec. function","Perceptual accuracy","Cognitive flexibility","Working-memory","Inhibitory control","Attention"))+
+  
+  #setting theme
+  apatheme+
+  #addin legend
+    theme(
+    legend.position = c(.95, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.box.background=element_rect()
+    #legend.margin = margin(1, 1, 1, 1)
+    )
+
+
+p 
+
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/cog_dom_food_ridge_plot.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+
+## how many outleirs not in this plot?
+#only makes sense for the data poionts, not the draws
+df %>%
+  filter(es > 1) %>%
+  group_by(binary_food,cognitive_domain) %>%
+  dplyr::summarise(Count = n())
+df %>%
+  filter(es < -1) %>%
+  group_by(binary_food,cognitive_domain) %>%
+  dplyr::summarise(Count = n())
+```
+
+## study type
+```{r}
+df$study_type<-factor(df$study_type,levels=c("group_comparison","cross_over","repeated_measures"))
+
+
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+bM_study_type = brm("es | se(es_var) ~ 1 + study_type + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+             file="bM_study_type",file_refit="on_change")
+```
+
+_just to try specifiying the model without intercept to get at the levels of the factor directly, but model doesn't converge_
+```{r}
+priors <- c(prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,2),class=b))
+bM_study_type_alt = brm("es | se(es_var) ~ study_type-1 + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+             file="bM_study_type_alt")
+summary(bM_study_type_alt)
+
+# same result with this syntax
+bM_study_type_alt2 = brm("es | se(es_var) ~ 0 + study_type + (1|study_id/es_id)",
+              prior=priors,
+              data= df,
+              iter=4000,
+             file="bM_study_type_alt2")
+#summary(bM_study_type_alt2)
+```
+
+
+```{r}
+aggregate(data = df,                # Applying aggregate
+                          es ~ study_type, #group by cognitive domain
+                          function(es) length(unique(es))) #pplied to es column
+table(df_uniqueSID$study_type)
+summary(bM_study_type)
+```
+
+
+### working with posterior
+```{r}
+#levels(df$study_type)
+
+posterior_study_type = as.data.frame(bM_study_type,variable= c("b_Intercept","b_study_typecross_over","b_study_typerepeated_measures","sd_study_id__Intercept","sd_study_id:es_id__Intercept")) 
+
+#shortening column names
+names(posterior_study_type) <- gsub("b_study_type", "b_", names(posterior_study_type))
+
+
+#calculating values by adding coefficients to Intercept
+posterior_study_type$group_comparison = posterior_study_type$b_Intercept
+posterior_study_type$cross_over = posterior_study_type$b_Intercept+posterior_study_type$b_cross_over
+posterior_study_type$repeated_measures = posterior_study_type$b_Intercept+posterior_study_type$b_repeated_measures
+
+# getting summaries for posteriors
+round(point_interval(posterior_study_type$group_comparison,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_study_type$cross_over,.interval=hdi)[1,1:3],3)
+round(point_interval(posterior_study_type$repeated_measures,.interval=hdi)[1,1:3],3)
+
+sd(posterior_study_type$group_comparison)
+sd(posterior_study_type$cross_over)
+sd(posterior_study_type$repeated_measures)
+
+```
+
+### recalculating model without repeated measures studies
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd))
+
+bM_study_type_rm_removed = brm("es | se(es_var) ~ 1 + (1|study_id/es_id)",
+              prior=priors,
+              data= subset(df,study_type!="repeated_measures"),
+              iter=4000,
+             file="bM_study_type_rm_removed",file_refit="on_change")
+```
+```{r}
+summary(bM_study_type_rm_removed)
+```
+### funnel plot for study type
+
+#### creating funnel plot basis
+__se calculation may be wrong but plot looks exactly like with frequentist approach__
+```{r}
+#extracting coefficient from study_id level
+fp_base_data=data.frame(coef(bM_main, robust = T)$study_id[,,"Intercept"])
+
+#storing values from main model
+estimate<-median(fp_base_data$Estimate)
+# SE interpreted as Estimate Error 
+se<-median(fp_base_data$Est.Error)
+
+#sequence of sampling variance values
+se.seq=seq(0, max(df$es_var), 0.001)
+
+# generating 95%CI and 99%CI boundaries
+ll95 = estimate-(1.96*se.seq)
+ul95 = estimate+(1.96*se.seq)
+ll99 = estimate-(3.29*se.seq)
+ul99 = estimate+(3.29*se.seq)
+#CI for estimate
+meanll95 = estimate-(1.96*se)
+meanul95 = estimate+(1.96*se)
+
+funplot_graphical<-data.frame(ll95,ul95,ll99,ul99,meanll95,meanul95)
+```
+
+```{r}
+#View(funplot_data)
+### plotting
+
+  #setting effect sizes and variance to the axes
+fp_base <- ggplot(aes(x = NULL, y = NULL), data = NULL) +
+  
+  #CI lines
+  geom_line(aes(x = se.seq, y = ll95), linetype = 'dotted', data = funplot_graphical)+
+  geom_line(aes(x = se.seq, y = ul95), linetype = 'dotted', data = funplot_graphical)+
+  geom_line(aes(x = se.seq, y = ll99), linetype = 'dashed', data = funplot_graphical)+
+  geom_line(aes(x = se.seq, y = ul99), linetype = 'dashed', data = funplot_graphical)+
+  
+  # line for estimate (could also think about putting diamond there instead)
+  geom_hline(yintercept=estimate,linetype="longdash")+
+  
+  
+  #reversing the axes (half way):
+  scale_x_reverse()+
+  #scale for y-axis:
+   scale_y_continuous(breaks=seq(-2,2,0.5))+
+  #flipping coordinates
+  coord_flip()+
+
+  #x- and y- axes informative labels
+  xlab('Standard Error') + ylab('SMD')+
+
+  #using the pre-specified APA theme:
+  apatheme  
+#fp_base
+```
+
+adding study type data
+_as for the previous frequentist approach_
+```{r}
+#relabeling for legend
+df["Study type"]=recode(df$study_type, group_comparison = 'Between-subjects', 
+                                       cross_over = 'Cross-over',
+                                       repeated_measures = 'Repeated measures')
+        
+fp_stype <-fp_base + geom_point(data=df,
+                                aes(x=es_var, y=es,
+                                    shape=`Study type`,fill=`Study type`,color=`Study type`), #specified manually below
+                                size=2.6)+
+  scale_shape_manual(values=c(21,22,24))+ #changing the shapes
+  scale_fill_manual(values=c(alpha(cbPalette[1],.6),alpha(cbPalette[4],.6),alpha(cbPalette[7],.6)))+ #changing fills
+  scale_color_manual(values=c(cbPalette[1],cbPalette[4],cbPalette[7]))+ #changing colours
+  
+    #addin legend
+    theme(
+    legend.position = c(1, 1),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.box.background=element_rect(fill='transparent')
+#    legend.background = element_rect()
+    #legend.margin = margin(1, 1, 1, 1)
+    )+
+  ylim(c(-2.1,2.1))
+fp_stype
+
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/funnel_plot_study_type.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+fp_stype
+dev.off()
+```
+
+## study quality
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+#df$risk
+bM_risk = brm("es | se(es_var)~ risk + (1 | study_id/es_id)",prior=priors,data=df,iter=4000,file="bM_risk",file_refit="on_change")
+```
+
+```{r}
+
+aggregate(data = df,                # Applying aggregate
+                          es ~ risk, #group by risk
+                          function(es) length(unique(es))) #pplied to es column
+aggregate(data = df,                # Applying aggregate
+                          study_id ~ risk, #group by risk
+                          function(study_id) length(unique(study_id))) #applied to study id column
+
+summary(bM_risk)
+
+ggplot(df, aes(x=risk, y=es,fill=risk)) + 
+        theme(axis.text.x = element_text(angle = 0))+ 
+        geom_violin() +
+        stat_summary(fun = "mean",
+               geom = "crossbar",   # or "point"
+               color = "black")+
+  scale_fill_manual(values=c("#009E73", "#0072B2", "#D55E00"))+ylab("estimate")+
+  apatheme
+
+```
+
+
+# ######################
+# sample population based mdoerators
+
+## age moderator
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            #prior for age-coefficient
+            prior(normal(0,10),class=b))
+#df$risk
+#mean(df$age,na.rm=T)
+
+bM_age = brm("es | se(es_var)~ age + (1 | study_id/es_id)",prior=priors,data=df,iter=4000,file="bM_age",file_refit="on_change")
+
+df_age<-subset(df,!is.na(df$age))
+```
+```{r}
+summary(bM_age)
+```
+
+### recalcuating model for underage & adult samples separately
+```{r}
+bM_children = update(bM_main, newdata=subset(df,age<18),iter=12000,
+                     file="bM_children",file_refit="on_change")#"always" for chainging iter
+
+bM_adult = update(bM_main, newdata=subset(df,age>=18),file="bM_adult",file_refit="on_change")
+
+```
+
+```{r}
+summary(bM_children)
+summary(bM_adult)
+```
+sample size underage/ adult
+```{r}
+sum(subset(df_uniqueSID,age<18)$N)
+sum(subset(df_uniqueSID,age>=18)$N)
+df_uniqueSID$age
+```
+
+```{r}
+#calculating reduction
+
+Main_intercept = as.data.frame(bM_main)$b_Intercept
+adult_intercept = as.data.frame(bM_adult)$b_Intercept
+children_intercept=as.data.frame(bM_children)$b_Intercept
+median(Main_intercept)
+median(adult_intercept)
+median(children_intercept)
+(median(adult_intercept) - median(Main_intercept)) / median(Main_intercept)*100
+(median(children_intercept) - median(Main_intercept)) / median(Main_intercept)*100
+```
+
+
+
+```{r}
+#for what levels?
+##taking mean of underage sample and mean of adult sample
+cond_underage= mean(subset(df,age<18)$age)
+cond_adult  = mean(subset(df,age>=18)$age)
+
+conditions <- data.frame(age = c(cond_underage, cond_adult))
+plot(conditional_effects(bM_age, effects = "age",
+                         conditions = conditions))
+```
+
+## BMI at baseline
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            # 
+            prior(normal(0,10),class=b))
+
+#mean(df$BMI_baseline,na.rm=T)
+
+bM_BMI = brm("es | se(es_var) ~ BMI_baseline + (1|study_id/es_id)",prior = priors, data=df, file="bM_BMI",file_refit="on_change")
+# file_refit since I'll change the priors most likely
+```
+
+```{r}
+print(c("estimates with baseline BMI values:",nrow(df[is.na(df$BMI_baseline)==FALSE,])))
+print(c("studies with baseline BMI values:",length(unique(df[is.na(df$BMI_baseline)==FALSE,]$study_id))))
+get_summary_DataExtracted("BMI_baseline",df)
+
+length(subset(df_uniqueSID,!is.na(BMI_baseline))$study_id)
+sum(subset(df_uniqueSID,!is.na(BMI_baseline))$N)
+
+summary(bM_BMI)
+
+#for comparison:
+fM_BMI <-  rma.mv(yi = es, V = es_var,mods = ~ BMI_baseline,data = df,random = ~1 | study_id/es_id)    
+summary(fM_BMI)
+```
+
+## proportion of females
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+#mean(df$BMI_baseline,na.rm=T)
+bM_female = brm("es | se(es_var) ~ share_female + (1|study_id/es_id)",
+              prior = priors, data=df,iter=4000,
+              file="bM_female",file_refit="on_change")
+summary(bM_female)
+```
+
+# further moderators
+
+## response times
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+#mean(df$BMI_baseline,na.rm=T)
+
+bM_isRT = brm("es | se(es_var) ~ es_is_RT + (1|study_id/es_id)",
+              prior = priors, data=df,iter=4000,
+              file="bM_isRT",file_refit="on_change")
+summary(bM_isRT)
+```
+## publication year
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b))
+
+#mean(df$BMI_baseline,na.rm=T)
+bM_year = brm("es | se(es_var) ~ publication_year + (1|study_id/es_id)",
+              prior = priors, data=df,iter=4000,
+              file="bM_year",file_refit="on_change")
+print(summary(bM_year),digits=3)
+```
+
+# ###########################
+
+# further multiple meta-regression
+not included, not informative
+```{r}
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            #continuous variables
+            prior(normal(0,100),class=b,coef=age),
+            prior(normal(0,100),class=b,coef=fasting_duration),
+            #categorical variables
+            ##cognitive domain
+            prior(normal(0,100),class=b,coef=cognitive_domaincognitive_flexibility ),
+            prior(normal(0,100),class=b,coef=cognitive_domaingeneral_executive_function),
+            prior(normal(0,100),class=b,coef=cognitive_domaininhibitory_control ),
+            prior(normal(0,100),class=b,coef=cognitive_domainlongMterm_memory ),
+            prior(normal(0,100),class=b,coef=cognitive_domainperceptual_accuracy ),
+            prior(normal(0,100),class=b,coef=cognitive_domainworking_memory ),
+            ##food stimuli
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_but_neutral ),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_mixed ),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_only ))
+multiple_regr_formula="es | se(es_var) ~ 1 + cognitive_domain + fasting_duration + has_food_stims + age + (1|study_id/es_id)"
+
+bM_multi = brm(multiple_regr_formula,
+               prior= priors,
+               data=df,
+               file="bM_multi",file_refit="on_change")
+
+prior_summary(bM_multi)
+```
+
+```{r}
+summary(bM_multi)
+```
+
+## further combinations of predictors
+```{r}
+# fasting duration + food stimuli
+priors <- c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            #continuous variables
+            prior(normal(0,100),class=b,coef=fasting_duration),
+            #categorical variables
+            ##food stimuli
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_but_neutral ),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_mixed),
+            prior(normal(0,100),class=b,coef=has_food_stimsfood_only  ))
+multiple_regr_formula="es | se(es_var) ~ 1  + fasting_duration + has_food_stims  + (1|study_id/es_id)"
+
+bM_multi_fdur_food_stim = brm(multiple_regr_formula,
+               prior= priors,
+               data=df,
+               file="bM_multi_fdur_food_stim",file_refit="on_change")
+
+
+```
+
+# sensitivity analyses
+_some kept in frequentist approach since they are concerned with frequentist measures like p-values (-> p-curve) and 95% confidence intervals (funnel plot)_
+
+## approximate leave one out analysis
+```{r}
+bM_main <- add_criterion(bM_main, c("loo"),
+                         moment_match=T)#,
+                         #overwrite=T) #CRASHES R
+# moment match doesn't work (on Mac at least)
+#bM_main_loo = loo(bM_main,save_psis=T,moment_match = T)
+#print(bM_main_loo)
+print(bM_main$criteria$loo)
+plot(bM_main$criteria$loo)
+#bM_main_fixeff <- add_criterion(bM_main_fixeff, c("loo", "waic"),moment_match=T)
+#print(bM_main_fixeff$criteria$loo)
+
+#loo_compare(bM_main, bM_main_fixeff)
+#print(waic(bM_main,bM_main_fixeff))
+```
+-> look at pareto-k diagnostics
+
+## Leave-one-group-out analysis
+Bayesian way
+```{r}
+## initialize df
+bMLOO_res_m <-matrix(data=NA,
+                 nrow=length(unique(df$study_id)),    #length of the number of studies
+                 ncol=10,
+                  dimnames=list(NULL,c("s_left_out","ref","coeff","se","ci.lb","ci.ub","R_hat","Bulk_ESS","Tail_ESS","N_df_i")))
+
+##setting idex for result df
+ind=1
+## for each study id
+#looping through all studies, to remove them one by one:
+for (SID in sort(unique(df$study_id))){#for  every study
+  #[1:4]
+ # selecting the data not in the to-be-exlcuded study
+  df_i = df[df$study_id!=SID,]
+  
+# make variable for name 
+  model_name_for_storage = paste0("bM_LOO_study_",SID)   
+  Mi = update(
+              #take the main model
+              bM_main,
+              #refit to reduced data
+              newdata=df_i,
+              iter=4000,                                                  # <- set iterations here
+              # store it as bM_LOO_studyXX
+              #file=model_name_for_storage,
+              #file_refit="always"
+              )
+
+  # get summary values on right level
+  ms = summary(Mi)$fixed
+# add point estimates, 95% and diagnostics to df
+  Mi_res = c(
+    SID,
+    unique(df[df$study_id==SID,]$ref),
+    ms$Estimate, #Estimate
+    ms$Est.Error, #SE
+    ms$`l-95% CI`, #ci.lb
+    ms$`u-95% CI`, #ci.ub
+    ms$Rhat, #R-hat
+    ms$Bulk_ESS, # ESS
+    ms$Tail_ESS,
+    #adding the combined sample size for later use
+    sum(df_i[!duplicated(df_i[,"study_id"]),]$N)
+  )  
+  bMLOO_res_m[ind,] = Mi_res
+  
+  ind=ind+1
+}
+
+bMLOO_res = data.frame(bMLOO_res_m)
+
+
+
+# adding main estimate
+ms_main = summary(bM_main)$fixed
+main_res = data.frame(s_left_out=0,
+    ref="Main model",
+    coeff=ms_main$Estimate, #Estimate
+    se = ms_main$Est.Error, #SE
+    ci.lb = ms_main$`l-95% CI`, #ci.lb
+    ci.ub = ms_main$`u-95% CI`, #ci.ub
+    R_hat = ms_main$Rhat, #R-hat
+    Bulk_ESS = ms_main$Bulk_ESS, # ESS
+    Tail_ESS = ms_main$Tail_ESS,
+    N_df_i = sum(df[!duplicated(df[,"study_id"]),]$N)
+  )
+
+# for plotting order:
+#bMLOO_res$order = 1:nrow(bMLOO_res)+1
+
+bMLOO_res$coeff = as.numeric(bMLOO_res$coeff)
+
+#arranging according to coeff
+bMLOO_res = plyr::arrange(bMLOO_res,-coeff)
+
+#adding main estimate
+bMLOO_res = rbind(bMLOO_res,main_res)
+#fixating order
+bMLOO_res$plot_order<-1:nrow(bMLOO_res)
+head(bMLOO_res)
+
+#dtype
+bMLOO_res$LOO_or_main = factor(ifelse(bMLOO_res$ref=="Main model",0,1))
+bMLOO_res$ci.ub = as.numeric(bMLOO_res$ci.ub)
+bMLOO_res$ci.lb = as.numeric(bMLOO_res$ci.lb)
+
+
+
+saveRDS(bMLOO_res,"bMLOO_res.RDS")
+bMLOO_res = readRDS("bmLOO_res.RDS")
+
+
+```
+
+### plotting LOGO forest plot
+```{r}
+#plot(bMLOO_res$coeff,bMLOO_res$se)
+Loo_plot_forest = ggplot(bMLOO_res, aes(y=reorder(ref,-plot_order), x=coeff, 
+                      xmin=ci.lb, xmax=ci.ub, 
+                      shape=LOO_or_main, colour=LOO_or_main))+
+  
+  
+  ### adding the data
+  #ggplot(LOO_res, aes(y=reorder(ref_num,-coeff), x=coeff))+
+  geom_point()+
+  #add the CI error bars
+  geom_errorbarh(height=.7)+
+  
+  # x-axis (add after iter is high & reliable enough)
+  #scale_x_continuous(limits=c(-0.05,0.15))+
+  
+  #scale main model / LOO shape
+  scale_shape_manual(values=c(19,18))+
+  scale_colour_manual(values=c(cbPalette[4],cbPalette[7]))+
+  #labs
+  xlab('SMD')+ ylab('Left-out study')+
+  
+  #Add a vertical dashed line indicating an effect size of zero, for reference
+  geom_vline(xintercept=subset(bMLOO_res,ref=="Main model")$coeff, color='black', linetype='dotted',lwd=0.5)+
+  
+  apatheme+theme(axis.text.y=element_text(size=5), #changing y-axis font size
+                 axis.line.y=element_blank(), axis.ticks.y=element_blank())
+
+
+Loo_plot_forest
+
+# -- png file --
+png(filename = "./data/LOO_analysis_forest_plot.png", 
+    width = 16, height = 20, 
+    pointsize = 12, res = 600,units ="cm")
+Loo_plot_forest
+dev.off()
+
+# -- tiff file --
+tiff(filename = "./data/LOO_analysis_forest_plot.tiff", 
+    width = 16, height = 20, 
+    pointsize = 12, res = 600,units ="cm")
+Loo_plot_forest
+dev.off()
+
+```
+
+### calculate MSE between LOO and main model
+
+```{r}
+#getting Main Model estimate
+MM = subset(bMLOO_res,ref=="Main model")$coeff
+#getting LOO estimates
+LOOs = subset(bMLOO_res,ref!="Main model")$coeff
+
+#calculating MSE by  getting distance, squaring, summing, dividing by N
+dist_LOO_MM = LOOs-MM
+dist_LOO_MM_sq = dist_LOO_MM^2
+MSE_LOO_MM = sum(dist_LOO_MM_sq)/length(dist_LOO_MM_sq)
+RMSE_LOO_MM = sqrt(MSE_LOO_MM)
+print(paste("root mean squared error LOOs to main model:",RMSE_LOO_MM))
+```
+MSE means the average distance between the full model and the reduced models.
+
+## original funnel plot
+1. PET/PEESE -> PET
+2. use trimfill
+```{r}
+#classical Egger's test/ PET
+PET<-regtest(Model_rma,model="lm",predictor="sei") #
+#Egger<-regtest(yi=df$es, vi=df$es_var,data=df) 
+metafor::funnel(Model_rma,yaxis="sei")
+PET
+
+#PET_funplotdata<-data.frame(PET$slab,PET$yi,PET$vi) #with 25 filled studies
+
+#now PEESE
+PEESE <- regtest(Model_rma,model="lm",predictor="vi")
+PEESE
+
+# ######
+
+# Using triM-and-fill analysis
+# Need a new Model because 'triMfill' doesn't take Multivariate Models
+Model_rma <- rma(yi = es, 
+               vi = es_var,
+               data = df,
+               slab=ref)
+summary(Model_rma)
+
+
+# Create funnel plot (with triM and fill)
+#pdf("./data/FunnelPlot.pdf", width=7, height=5)
+taf <- trimfill(Model_rma) # estimate Missing studies
+taf
+# ########
+        
+funplot_data<-data.frame(taf$slab,taf$fill,taf$yi,taf$vi) #with 25 filled studies
+# plot:
+#relabeling for legend
+funplot_data["Filled data"]<-ifelse(funplot_data$taf.fill==TRUE,"Filled", "Original")
+
+
+## main funnelplot
+tf_fp<-fp_base+geom_point(data=funplot_data, #selecting funnel plot data
+                       aes(x= taf$vi, y= taf$yi, #keeping in mind that coordinates are flipped!
+                           shape=`Filled data`,#since trim and fill model select the right values here
+                           color=`Filled data`),
+                       size= 2.6
+                       )+ 
+  
+  # line for TAF estimate 
+  geom_hline(yintercept=c(taf$b),linetype="longdash",color=cbPalette[2])+
+  
+  
+  scale_shape_manual(values=c(15,16))+ #changing the shapes
+  
+  scale_color_manual(values=c(alpha(cbPalette[2],0.6),alpha(cbPalette[4],0.6)))+
+  
+  #adding legend back
+  theme(
+    legend.position = c(.95, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(6, 6, 6, 6),
+    legend.box.background=element_rect()
+    )+
+  #theme(legend.position="right")+
+  ylim(c(-2.1,2.1))
+  
+tf_fp
+
+# -- tiff file --
+tiff(filename = "./data/trim_fill_funnel_plot.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 600,units ="cm")
+tf_fp
+dev.off()
+```
+
+## p-curve
+with dmetar p_curve
+```{r}
+# using dMetar pcurve function -> needs object in "Meta" forMat
+
+p_curve_data <- data.frame(TE=df$es,seTE=df$es_var,studlab=df$ref) #seTE=df$es_var/sqrt(df$N)
+#pcurve(p_curve_data)
+pcurve_vals<-pcurve(p_curve_data)
+```
+
+### recreating p-curve with different style
+```{r}
+#View(pcurve_vals)
+pcurve_df<-data.frame(matrix(ncol=0,nrow=5))
+#getting the x-values 
+pcurve_df$x<-unlist(pcurve_vals$PlotData[1])
+#y-values for curves:
+pcurve_df$observed<-unlist(pcurve_vals$PlotData[2])
+pcurve_df$pow33<-unlist(pcurve_vals$PlotData[3])
+pcurve_df$flat<-unlist(pcurve_vals$PlotData[4])
+
+#labels for observed p-values
+#pcurve_df$labs<-paste(round(pcurve_vals,digits=0),"%", sep="")
+pcurve_df$labs<-c("85%","6%","3%","3%","2%")
+
+pcurve_plot<-ggplot(data=pcurve_df,aes(x=x, y=observed))+
+  geom_line(aes(color="Observed"),size=1.2)+
+  geom_line(aes(y=pow33,color="33% power"),size=1.2, lty=2)+
+  geom_line(aes(y=flat,color="No effect"),size=1.2, lty=4)+
+  geom_point(pch=20,aes(color=cbPalette[1]))+
+
+  scale_color_manual(name='P-curves',
+                     breaks=c('Observed',"33% power","No effect"),
+                     values=c('Observed'=cbPalette[1],"33% power"=cbPalette[4],"No effect"=cbPalette[7]))+
+  #labels
+  geom_label(label=c("85%","6%","3%","3%","2%"), vjust=c(1.3,-0.2,-0.2,-0.2,-0.2))+
+  
+  xlab("P-value")+ ylab("Percentage of test results")+
+  
+  #aesthetics:
+  apatheme+  
+  theme(
+    legend.position = c(.95, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.box.background=element_rect())
+
+
+pcurve_plot
+
+##    -- .tiff file for publication  --
+
+tiff(filename = "./data/P_curve.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+pcurve_plot
+dev.off()
+```
+
+
+# sensitivity analyses 
+## for main model
+```{r}
+#library(brms)
+#library(dplyr)
+
+# Define a list of different priors for the Intercept with varying standard deviations
+
+prior_list = list(
+  c(prior(normal(0, 0.1), class = Intercept), 
+    prior(cauchy(0, 0.5), class = sd)),
+    c(prior(normal(0, 1), class = Intercept), 
+    prior(cauchy(0, 0.5), class = sd)),
+    c(prior(normal(0, 10), class = Intercept), 
+    prior(cauchy(0, 0.5), class = sd)),
+    c(prior(normal(0, 100), class = Intercept), 
+    prior(cauchy(0, 0.5), class = sd)))
+
+prior_list[[2]]
+# Initialize an empty dataframe to store the posterior draws
+posterior_draws_df <- data.frame()
+
+# Loop over each set of priors
+for (i in seq_along(prior_list)) {
+  # Define the model name for each set of priors
+  model_name <- paste0("Model_", i)
+  print(prior_list[[i]])
+  # Run the brms model with the current set of priors
+  bM_main <- brm(
+    formula = es | se(es_var) ~ 1 + (1|study_id/es_id),
+    prior = prior_list[[i]],
+    data = df,
+    iter = 4000, 
+    save_pars = save_pars(all = TRUE),
+    file = model_name,
+    file_refit = "on_change"
+  )
+  
+  # Extract posterior draws
+  draws <- as_draws_df(bM_main)
+  
+  # Add a column to indicate which model the draws are from
+  draws$model <- model_name
+  
+  # add the sd for the intercept prior
+  #draws$intercept_prior_sd <- prior_list[[i]][[1]]$args[[2]]
+  
+  # Bind the new draws to the existing dataframe
+  posterior_draws_df <- bind_rows(posterior_draws_df, draws)
+}
+
+# Display the combined posterior draws dataframe
+print(posterior_draws_df)
+
+#posterior_draws_df$model
+posterior_draws_df$SD_prior_intercept = ifelse(
+  posterior_draws_df$model=="Model_1", 0.1,
+  ifelse(
+  posterior_draws_df$model=="Model_2", 1,
+  ifelse(
+  posterior_draws_df$model=="Model_3", 10,
+  100)))
+
+saveRDS(file="posterior_draws_sensitivity_analysis.RDS",posterior_draws_df)
+posterior_draws_df = readRDS("posterior_draws_sensitivity_analysis.RDS")
+```
+
+```{r}
+#ggplot(posterior_draws_df,aes(x=SD_prior_intercept,y=median(Intercept)))+geom_point()
+
+
+p=ggplot(posterior_draws_df,aes(x=Intercept,group=model,colour=model))+
+  geom_density(lwd=1.2)+
+  scale_color_manual(
+    values = cbPalette,  # Using the predefined colorblind-friendly palette
+    breaks = c("Model_1", "Model_2", "Model_3", "Model_4"), 
+    labels = c("0.1", "1", "10", "100"))+ylab("Density")+apatheme+theme(legend.position="top")
+
+p
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/sensitivity_analysis_main_model.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+```
+
+## for cognitive domain
+```{r}
+# Define a list of different priors for the coefficient with varying standard deviations
+prior_list = list(
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,0.1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b)),
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,100),class=b))
+  )
+
+prior_list[[2]]
+# Initialize an empty dataframe to store the posterior draws
+posterior_draws_df_cogdom <- data.frame()
+
+# Loop over each set of priors
+for (i in seq_along(prior_list)) {
+  # Define the model name for each set of priors
+  model_name <- paste0("Model_", i,"_cogdom")
+  print(prior_list[[i]])
+  # Run the brms model with the current set of priors
+
+  bM_cog = brm("es | se(es_var) ~ 1 + cognitive_domain + (1|study_id/es_id)",
+              prior = prior_list[[i]],
+              data= df,
+              iter=4000,
+             file=model_name, file_refit="on_change")
+  # Extract posterior draws
+  draws <- as_draws_df(bM_cog)
+  
+  # Add a column to indicate which model the draws are from
+  draws$model <- model_name
+  
+  # add the sd for the intercept prior
+  #draws$intercept_prior_sd <- prior_list[[i]][[1]]$args[[2]]
+ 
+  # Bind the new draws to the existing dataframe
+  posterior_draws_df_cogdom <- bind_rows(posterior_draws_df_cogdom, draws)
+}
+
+posterior_draws_df_cogdom$SD_prior_intercept = ifelse(
+  posterior_draws_df_cogdom$model=="Model_1", 0.1,
+  ifelse(
+  posterior_draws_df_cogdom$model=="Model_2", 1,
+  ifelse(
+  posterior_draws_df_cogdom$model=="Model_3", 10,
+  #if it's model 4:
+  100)))
+
+# Display the combined posterior draws dataframe
+print(posterior_draws_df_cogdom)
+
+saveRDS(file="posterior_draws_sensitivity_analysis_cognitive_domain.RDS",posterior_draws_df_cogdom)
+posterior_draws_df_cogdom = readRDS("posterior_draws_sensitivity_analysis_cognitive_domain.RDS")
+```
+
+```{r}
+#library(tidyr)
+
+posterior_draws_df_cogdom_lf <- posterior_draws_df_cogdom %>%
+  pivot_longer(
+    cols = c(starts_with("b_cognitive_domain"), "b_Intercept"),
+    names_to = "cognitive_domain",
+    values_to = "value")
+
+posterior_draws_df_cogdom_lf %>%
+  group_by(cognitive_domain, model) %>%
+  tally()
+
+posterior_draws_df_cogdom_lf$cognitive_domain <- factor(
+  sub("b_cognitive_domain", "", posterior_draws_df_cogdom_lf$cognitive_domain))
+
+posterior_draws_df_cogdom_lf$model=factor(posterior_draws_df_cogdom_lf$model)
+
+levels(posterior_draws_df_cogdom_lf$cognitive_domain)
+levels(posterior_draws_df_cogdom_lf$model)
+
+data_summary_4plot <- posterior_draws_df_cogdom_lf %>%
+  group_by(cognitive_domain, model)%>% dplyr::summarise(
+    mean_es = mean(value, na.rm = TRUE),
+    sd_es = sd(value, na.rm = TRUE))%>%
+  ungroup()
+
+
+p = ggplot(data_summary_4plot, aes(x = cognitive_domain, y = mean_es, group = model)) +
+  geom_point(aes(shape = model, color = model), size = 2, alpha = 0.7) +  # Adding color based on model
+  geom_errorbar(aes(
+    ymin = mean_es - sd_es, 
+    ymax = mean_es + sd_es, 
+    color = model),  # Adding color based on model
+    width = 0.2, size = 0.2, alpha = 0.4) +
+  scale_x_discrete(
+    breaks = c("longMterm_memory", "general_executive_function", "perceptual_accuracy", "cognitive_flexibility", "working_memory", "inhibitory_control", "b_Intercept"), 
+    labels = c("Long-term memory", "Other exec. function", "Perceptual accuracy", "Cognitive flexibility", "Working-memory", "Inhibitory control", "Attention")
+  ) +
+  scale_shape_manual(
+    values = c(15, 16, 17, 18),  # Manually setting shape values
+    breaks = c("Model_1_cogdom", "Model_2_cogdom", "Model_3_cogdom", "Model_4_cogdom"), 
+    labels = c("0.1", "1", "10", "100")
+  ) +
+  scale_color_manual(
+    values = cbPalette,  # Using the predefined colorblind-friendly palette
+    breaks = c("Model_1_cogdom", "Model_2_cogdom", "Model_3_cogdom", "Model_4_cogdom"), 
+    labels = c("0.1", "1", "10", "100")
+  ) +
+  xlab("Cognitive domain") + 
+  ylab("SMD") +
+  apatheme +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+p
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/sensitivity_analysis_cog_dom.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+```
+
+## for fasting duration
+```{r}
+# Define a list of different priors for the coefficient with varying standard deviations
+prior_list = list(
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,0.1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b)),
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,100),class=b))
+  )
+
+prior_list[[2]]
+# Initialize an empty dataframe to store the posterior draws
+posterior_draws_df_fdur <- data.frame()
+
+# Loop over each set of priors
+for (i in seq_along(prior_list)) {
+  # Define the model name for each set of priors
+  model_name <- paste0("Model_", i,"_fdur")
+  print(prior_list[[i]])
+  # Run the brms model with the current set of priors
+
+  bM_fdur = brm("es | se(es_var) ~ 1 + fasting_duration + (1|study_id/es_id)",
+              prior = prior_list[[i]],
+              data= df,
+              iter=4000,
+             file=model_name, file_refit="on_change")
+  # Extract posterior draws
+  draws <- as_draws_df(bM_fdur)
+  
+  # Add a column to indicate which model the draws are from
+  draws$model <- model_name
+  
+  # add the sd for the intercept prior
+  #draws$intercept_prior_sd <- prior_list[[i]][[1]]$args[[2]]
+ 
+  # Bind the new draws to the existing dataframe
+  posterior_draws_df_fdur <- bind_rows(posterior_draws_df_fdur, draws)
+}
+
+posterior_draws_df_fdur$SD_prior_intercept = ifelse(
+  posterior_draws_df_fdur$model=="Model_1", 0.1,
+  ifelse(
+  posterior_draws_df_fdur$model=="Model_2", 1,
+  ifelse(
+  posterior_draws_df_fdur$model=="Model_3", 10,
+  100)))
+
+# Display the combined posterior draws dataframe
+print(posterior_draws_df_fdur)
+
+saveRDS(file="posterior_draws_sensitivity_analysis_fasting_duration.RDS",posterior_draws_df_fdur)
+posterior_draws_df_fdur = readRDS("posterior_draws_sensitivity_analysis_fasting_duration.RDS")
+```
+
+```{r}
+posterior_draws_df_fdur$model=factor(posterior_draws_df_fdur$model)
+
+p=ggplot(posterior_draws_df_fdur,aes(x=b_fasting_duration ,group=model,colour=model))+
+  geom_density(lwd=1.2)+
+  scale_color_manual(
+    values = cbPalette,  # Using the predefined colorblind-friendly palette
+    breaks = c("Model_1_fdur", "Model_2_fdur", "Model_3_fdur", "Model_4_fdur"), 
+    labels = c("0.1", "1", "10", "100"))+ylab("Density")+apatheme+theme(legend.position="top")
+
+p
+
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/sensitivity_analysis_fasting_duration.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+```
+## for food stimuli
+```{r}
+# Define a list of different priors for the coefficient with varying standard deviations
+prior_list = list(
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,0.1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b)),
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,100),class=b))
+  )
+
+prior_list[[2]]
+# Initialize an empty dataframe to store the posterior draws
+posterior_draws_df_foodstim <- data.frame()
+
+# Loop over each set of priors
+for (i in seq_along(prior_list)) {
+  # Define the model name for each set of priors
+  model_name <- paste0("Model_", i,"_foodstim")
+  print(prior_list[[i]])
+  # Run the brms model with the current set of priors
+
+  bM_foodstim = brm("es | se(es_var) ~ 1 + has_food_stims + (1|study_id/es_id)",
+              prior = prior_list[[i]],
+              data= df,
+              iter=4000,
+             file=model_name, file_refit="on_change")
+  # Extract posterior draws
+  draws <- as_draws_df(bM_foodstim)
+  
+  # Add a column to indicate which model the draws are from
+  draws$model <- model_name
+  
+  # add the sd for the intercept prior
+  #draws$intercept_prior_sd <- prior_list[[i]][[1]]$args[[2]]
+ 
+  # Bind the new draws to the existing dataframe
+  posterior_draws_df_foodstim <- bind_rows(posterior_draws_df_foodstim, draws)
+}
+
+posterior_draws_df_foodstim$SD_prior_intercept = ifelse(
+  posterior_draws_df_foodstim$model=="Model_1", 0.1,
+  ifelse(
+  posterior_draws_df_foodstim$model=="Model_2", 1,
+  ifelse(
+  posterior_draws_df_foodstim$model=="Model_3", 10,
+  100)))
+
+# Display the combined posterior draws dataframe
+print(posterior_draws_df_foodstim)
+
+saveRDS(file="posterior_draws_sensitivity_analysis_food_stims.RDS",posterior_draws_df_foodstim)
+posterior_draws_df_foodstim = readRDS("posterior_draws_sensitivity_analysis_food_stims.RDS")
+```
+
+```{r}
+posterior_draws_df_foodstim_lf <- posterior_draws_df_foodstim %>%
+  pivot_longer(
+    cols = c(starts_with("b_has_food_stims"), "b_Intercept"),
+    names_to = "has_food_stims",
+    values_to = "value")
+
+posterior_draws_df_foodstim_lf %>%
+  group_by(has_food_stims, model) %>%
+  tally()
+
+posterior_draws_df_foodstim_lf$has_food_stims <- factor(
+  sub("b_has_food_stims", "", posterior_draws_df_foodstim_lf$has_food_stims))
+
+posterior_draws_df_foodstim_lf$model=factor(posterior_draws_df_foodstim_lf$model)
+
+levels(posterior_draws_df_foodstim_lf$has_food_stims)
+levels(posterior_draws_df_foodstim_lf$model)
+
+data_summary_4plot <- posterior_draws_df_foodstim_lf %>%
+  group_by(has_food_stims, model)%>% dplyr::summarise(
+    mean_es = mean(value, na.rm = TRUE),
+    sd_es = sd(value, na.rm = TRUE))%>%
+  ungroup()
+
+
+p = ggplot(data_summary_4plot, aes(x = has_food_stims, y = mean_es, group = model)) +
+  geom_point(aes(shape = model, color = model), size = 2, alpha = 0.7) +  # Adding color based on model
+  geom_errorbar(aes(
+    ymin = mean_es - sd_es, 
+    ymax = mean_es + sd_es, 
+    color = model),  # Adding color based on model
+    width = 0.2, size = 0.2, alpha = 0.4) +
+  scale_x_discrete(breaks=c("b_Intercept","food_but_neutral","food_mixed","food_only"), 
+                   labels=c("No food","Neutral\ncontrol","Mixed","Food\nonly")) +
+  scale_shape_manual(
+    values = c(15, 16, 17, 18),  # Manually setting shape values
+    breaks = c("Model_1_foodstim", "Model_2_foodstim", "Model_3_foodstim", "Model_4_foodstim"), 
+    labels = c("0.1", "1", "10", "100")
+  ) +
+  scale_color_manual(
+    values = cbPalette,  # Using the predefined colorblind-friendly palette
+    breaks = c("Model_1_foodstim", "Model_2_foodstim", "Model_3_foodstim", "Model_4_foodstim"), 
+    labels = c("0.1", "1", "10", "100")
+  ) +
+  xlab("Food stimuli") + 
+  ylab("SMD") +
+  apatheme +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+p
+
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/sensitivity_analysis_food_stims.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+```
+
+## for study design
+```{r}
+# Define a list of different priors for the coefficient with varying standard deviations
+prior_list = list(
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,0.1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,1),class=b)),
+    c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,10),class=b)),
+  c(prior(normal(0,1), class = Intercept),
+            prior(cauchy(0,0.5), class = sd),
+            prior(normal(0,100),class=b))
+  )
+
+prior_list[[2]]
+# Initialize an empty dataframe to store the posterior draws
+posterior_draws_df_studytype <- data.frame()
+
+# Loop over each set of priors
+for (i in seq_along(prior_list)) {
+  # Define the model name for each set of priors
+  model_name <- paste0("Model_", i,"_studytype")
+  print(prior_list[[i]])
+  # Run the brms model with the current set of priors
+
+  bM_study_type = brm("es | se(es_var) ~ 1 + study_type + (1|study_id/es_id)",
+              prior = prior_list[[i]],
+              data= df,
+              iter=4000,
+             file=model_name, file_refit="on_change")
+  # Extract posterior draws
+  draws <- as_draws_df(bM_study_type)
+  
+  # Add a column to indicate which model the draws are from
+  draws$model <- model_name
+  
+  # add the sd for the intercept prior
+  #draws$intercept_prior_sd <- prior_list[[i]][[1]]$args[[2]]
+ 
+  # Bind the new draws to the existing dataframe
+  posterior_draws_df_studytype <- bind_rows(posterior_draws_df_studytype, draws)
+}
+
+posterior_draws_df_studytype$SD_prior_intercept = ifelse(
+  posterior_draws_df_studytype$model=="Model_1", 0.1,
+  ifelse(
+  posterior_draws_df_studytype$model=="Model_2", 1,
+  ifelse(
+  posterior_draws_df_studytype$model=="Model_3", 10,
+  100)))
+
+# Display the combined posterior draws dataframe
+print(posterior_draws_df_studytype)
+
+saveRDS(file="posterior_draws_sensitivity_analysis_study_type.RDS",posterior_draws_df_studytype)
+posterior_draws_df_studytype = readRDS("posterior_draws_sensitivity_analysis_study_type.RDS")
+```
+
+```{r}
+posterior_draws_df_studytype_lf <- posterior_draws_df_studytype %>%
+  pivot_longer(
+    cols = c(starts_with("b_study_type"), "b_Intercept"),
+    names_to = "study_type",
+    values_to = "value"
+  )
+
+
+posterior_draws_df_studytype_lf %>%
+  group_by(study_type, model) %>%
+  tally()
+
+posterior_draws_df_studytype_lf$study_type <- factor(
+  sub("b_study_type", "", posterior_draws_df_studytype_lf$study_type))
+
+posterior_draws_df_studytype_lf$model=factor(posterior_draws_df_studytype_lf$model)
+
+levels(posterior_draws_df_studytype_lf$study_type)
+levels(posterior_draws_df_studytype_lf$model)
+
+data_summary_4plot <- posterior_draws_df_studytype_lf %>%
+  group_by(study_type, model)%>% dplyr::summarise(
+    mean_es = mean(value, na.rm = TRUE),
+    sd_es = sd(value, na.rm = TRUE))%>%
+  ungroup()
+
+
+p = ggplot(data_summary_4plot, aes(x = study_type, y = mean_es, group = model)) +
+  geom_point(aes(shape = model, color = model), size = 2, alpha = 0.7) +  # Adding color based on model
+  geom_errorbar(aes(
+    ymin = mean_es - sd_es, 
+    ymax = mean_es + sd_es, 
+    color = model),  # Adding color based on model
+    width = 0.2, size = 0.2, alpha = 0.4) +
+  scale_x_discrete(breaks=c("b_Intercept","cross_over","repeated_measures"), 
+                   labels=c("Group comparison","Cross over","Repeated measures")) +
+  scale_shape_manual(
+    values = c(15, 16, 17,18),  # Manually setting shape values
+    breaks = c("Model_1_studytype", "Model_2_studytype", "Model_3_studytype", "Model_4_studytype"), 
+    labels = c("0.1", "1", "10", "100")
+  ) +
+  scale_color_manual(
+    values = cbPalette,  # Using the predefined colorblind-friendly palette
+    breaks = c("Model_1_studytype", "Model_2_studytype", "Model_3_studytype", "Model_4_studytype"),
+    labels = c("0.1", "1", "10", "100")
+  ) +
+  xlab("Study type") + 
+  ylab("SMD") +
+  apatheme +
+  theme(
+    legend.position = "top",
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+p
+
+##    -- .tiff file for publication  --
+tiff(filename = "./data/sensitivity_analysis_study_type.tiff", 
+    width = 16, height = 12.8, 
+    pointsize = 12, res = 300,units ="cm")
+p
+dev.off()
+```
+
+# ######################################### 
+
+# checking 2nd moderator coding
+_something doesn't work here atm._
+```{r}
+df_2nd_coding = read.xlsx("./data/MA_DataExtracted_2nd_coding.xlsx")
+df_2nd_coding$ref
+df_both_codings = merge(
+  #first coding, just selecting relevant columns
+  df[,c("article_id","es_id","ref","cognitive_domain","fasting_duration","task_description","study_type","has_food_stims","fasting_duration_description..if.empty.assume.fasting.duration.properly.controlled.and..or.mean.fasting.duration.reported.")],
+  #second coding
+      df_2nd_coding,
+      by="es_id",
+  all.x=TRUE)
+
+#reordering and adding columsn for easier visual comparison
+df_both_codings=cbind(df_both_codings,
+      data.frame("agreement_cognitive_domain"=NA,
+                 "agreement_fasting_duration"=NA,
+                 "agreement_study_type"=NA,
+                 "agreement_has_food_stims"=NA))
+#colnames(df_both_codings)
+col_order = c("article_id","es_id","ref","cognitive_domain","cognitive_domain_2ND_RATING","agreement_cognitive_domain","fasting_duration","fasting_duration_2ND_RATING","agreement_fasting_duration","task_description","task_description_2ND_RATING","study_type","study_type_2ND_RATING","agreement_study_type","has_food_stims","has_food_stims_2ND_RATING","agreement_has_food_stims")
+
+#exported for manual inspection
+df_both_codings=df_both_codings[,col_order]
+#write.xlsx(df_both_codings,file="./data/both_moderator_codings.xlsx")
+
+#loading file with agreement between raters
+df_both_codings_inspected=read.xlsx("./data/both_moderator_codings_manual_inspection_rev1.xlsx")
+
+#adding to general DF
+#[,c("es_id","agreement_cognitive_domain","agreement_fasting_duration","agreement_study_type","agreement_has_food_stims")]
+df = merge(df,
+           df_both_codings_inspected,
+           all.x=TRUE,by="es_id",
+           )
+```
+
+## calculating score for agreement
+for cognitive domain: on es level, since several studies with different cognitive domains; for others on study level.
+```{r}
+# cognitive domain
+kappa2(df[,c("cognitive_domain","cognitive_domain_2ND_RATING")])
+kappa2(df[,c("study_type","study_type_2ND_RATING")])
+kappa2(df[,c("has_food_stims","has_food_stims_2ND_RATING")])
+
+# Calculate ICC
+
+df$fasting_duration_2ND_RATING = as.numeric(df$fasting_duration_2ND_RATING)
+irr::icc(df[,c("fasting_duration","fasting_duration_2ND_RATING")], model = "twoway", type = "agreement", unit = "single")
+
+
+```
+
+
+## END

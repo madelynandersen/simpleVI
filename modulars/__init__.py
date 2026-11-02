@@ -29,5 +29,4 @@ from .plot_rr import plot_a_few_trajectories_1d, plot_mean_band, plot_mean_band_
 from .utils import *
 from .distributions import *
 from .radon import *
-from .pulmonary import *
 from .logistic_regression import *

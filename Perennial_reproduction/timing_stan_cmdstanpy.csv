@@ -1,0 +1,32 @@
+package,setting,label,seed,iterations,mc_samples,seconds,status,error,iterations_run,run_order,timestamp
+stan_cmdstanpy,stan_compile,"Stan model compile / setup (once, CmdStanPy)",,,,6.895,ok,,,0,2026-10-31 08:24:45
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),11.0,10000.0,1.0,0.309,ok,,300.0,2,2026-10-31 08:24:45
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),12.0,10000.0,1.0,0.286,ok,,300.0,3,2026-10-31 08:24:45
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),13.0,10000.0,1.0,0.306,ok,,300.0,4,2026-10-31 08:24:46
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),14.0,10000.0,1.0,0.313,ok,,300.0,5,2026-10-31 08:24:46
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),15.0,10000.0,1.0,0.255,ok,,300.0,6,2026-10-31 08:24:46
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),16.0,10000.0,1.0,0.287,ok,,300.0,7,2026-10-31 08:24:47
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),17.0,10000.0,1.0,0.31,ok,,300.0,8,2026-10-31 08:24:47
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),18.0,10000.0,1.0,0.305,ok,,300.0,9,2026-10-31 08:24:47
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),19.0,10000.0,1.0,0.302,ok,,300.0,10,2026-10-31 08:24:48
+stan_cmdstanpy,full_defaults,Stan full defaults (CmdStanPy),20.0,10000.0,1.0,0.308,ok,,300.0,11,2026-10-31 08:24:48
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),11.0,50000.0,1.0,12.544,ok,,50000.0,12,2026-10-31 08:25:00
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),12.0,50000.0,1.0,12.831,ok,,50000.0,13,2026-10-31 08:25:13
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),13.0,50000.0,1.0,12.5,ok,,50000.0,14,2026-10-31 08:25:26
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),14.0,50000.0,1.0,12.326,ok,,50000.0,15,2026-10-31 08:25:38
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),15.0,50000.0,1.0,12.243,ok,,50000.0,16,2026-10-31 08:25:50
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),16.0,50000.0,1.0,12.359,ok,,50000.0,17,2026-10-31 08:26:03
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),17.0,50000.0,1.0,12.295,ok,,50000.0,18,2026-10-31 08:26:15
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),18.0,50000.0,1.0,12.347,ok,,50000.0,19,2026-10-31 08:26:27
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),19.0,50000.0,1.0,12.642,ok,,50000.0,20,2026-10-31 08:26:40
+stan_cmdstanpy,default,Stan ADVI default (CmdStanPy),20.0,50000.0,1.0,12.738,ok,,50000.0,21,2026-10-31 08:26:53
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",11.0,50000.0,100.0,795.175,ok,,50000.0,22,2026-10-31 08:40:08
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",12.0,50000.0,100.0,777.698,ok,,50000.0,23,2026-10-31 08:53:06
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",13.0,50000.0,100.0,778.093,ok,,50000.0,24,2026-10-31 09:06:04
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",14.0,50000.0,100.0,766.748,ok,,50000.0,25,2026-10-31 09:18:50
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",15.0,50000.0,100.0,765.405,ok,,50000.0,26,2026-10-31 09:31:36
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",16.0,50000.0,100.0,771.249,ok,,50000.0,27,2026-10-31 09:44:27
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",17.0,50000.0,100.0,768.922,ok,,50000.0,28,2026-10-31 09:57:16
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",18.0,50000.0,100.0,777.667,ok,,50000.0,29,2026-10-31 10:10:14
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",19.0,50000.0,100.0,768.28,ok,,50000.0,30,2026-10-31 10:23:02
+stan_cmdstanpy,adjusted,"Stan ADVI adjusted, 100 MC (CmdStanPy)",20.0,50000.0,100.0,779.022,ok,,50000.0,31,2026-10-31 10:36:01
