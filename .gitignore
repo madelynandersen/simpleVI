@@ -129,3 +129,6 @@ dmypy.json
 # rendered copy of Perennial_reproduction/README.md (out of date)
 Perennial_reproduction/README.html
 .Rproj.user
+
+# PyMC 300k-iteration trajectory (~103 MB), too large for GitHub
+Perennial_reproduction/extra_figs/pymc_trajectory_vi_default_300k.csv
