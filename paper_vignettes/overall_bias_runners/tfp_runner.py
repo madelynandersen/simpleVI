@@ -105,8 +105,8 @@ def model_1d_gaussian():
     mu_prior, sigma_prior = 0, 10
     sigma_like = 1.0
 
-    # no observations, as in 3_1_tfp.ipynb and rr_stan.ipynb, so the posterior is the prior
-    DATA = False
+    # 100 observations, as rr_tfp.ipynb (False: no observations, as 3_1_tfp.ipynb, so the posterior is the prior)
+    DATA = True
     if DATA:
         data = gaussian_1d(100, 3, sigma_like, seed=0).astype(np.float32)
         true_mu_post, true_sigma_post = gaussian_1d_posterior(data, mu_prior=mu_prior, sigma_prior=sigma_prior, sigma_like=sigma_like)
@@ -125,7 +125,8 @@ def model_1d_gaussian():
     setups = setups_from_processed(apply_traj_transform(results, transform_fn=None,
                                                         n_samples=10_000, seed=1, NOTEBOOK=False))
     return {"1d_gaussian": dict(setups=setups, coordinates=["mu"], best_mean=true_mu_post, best_std=true_sigma_post,
-                                reference_source="prior (no observations, as 3_1_tfp.ipynb / rr_stan.ipynb)")}
+                                reference_source=("gaussian_1d_posterior (analytic, as rr_tfp.ipynb)" if DATA
+                                                  else "prior (no observations, as 3_1_tfp.ipynb / rr_stan.ipynb)"))}
 
 
 def model_beta_binomial():

@@ -20,7 +20,12 @@ fitted with brms. This folder runs the authors' own NUTS code, then fits the sam
 | `extra_figs.R` | Figures 1, 10 and 11 of the manuscript, and other layouts, from the saved tables (writes `extra_figs/`)* |
 | `stan_reproducing.py`, `export_stan_model.R` | CmdStanPy version of the R Stan ADVI fits (default and 100 MC, 25,000 iterations), run on the brms-generated Stan program and data that `export_stan_model.R` writes to `stan_model/`* |
 | `journe_restarts.py`, `run_journe_restarts.sh` | `--restarts` mode of the PyMC, NumPyro/TFP and Stan scripts: random restarts for the "Journé et al. example" row of `paper_vignettes/overall_default_bias_comparisons.ipynb`* |
+| `stan_model/journe_brms.stan` | The Stan program brms generates for the model, written by `export_stan_model.R` (the data file it also writes is not tracked) |
+| `TableS1_reproduced.csv` | Output of step 1, included: the R NUTS fit that every other table is compared with |
+| `TableS1_best_vi.csv` | Output of step 6, included: the global VI optimum (PyMC seed 27) |
+| `brms_model_spec.txt` | Output of step 1, included: the priors (`prior_summary`) and Stan code of the fitted model |
 | `R_package_versions.csv` | R version, CmdStan version and every R package (with dependencies) used by these scripts* |
+| `Perennial_reproduction.Rproj` | RStudio project; open it so the scripts run from this folder |
 | `model.coefficients.best.csv`, `output.climwin.csv`, `relative.contribution.sitelevel.csv`, `renv.lock` | Other files from the OSF archive; not used by these scripts |
 
 *Files authored by Madelyn Andersen
@@ -38,7 +43,9 @@ fitted with brms. This folder runs the authors' own NUTS code, then fits the sam
 
 ## Run order
 
-Steps 2-5 need `TableS1_reproduced.csv` from step 1 for their comparison tables. Step 6 needs the files from steps 4 and/or 5 (it scores whichever exist). Step 8 draws whichever figures its input tables exist for.
+`TableS1_reproduced.csv` (step 1) and `TableS1_best_vi.csv` (step 6) are included in the repository, so steps 1
+and 4–6 can be skipped; every other table and figure has to be generated. Steps 2-5 need `TableS1_reproduced.csv`
+for their comparison tables. Step 6 needs the files from steps 4 and/or 5 (it scores whichever exist). Step 8 draws whichever figures its input tables exist for.
 
 1. **`run_repro.R`** (R, Source). The authors' NUTS fit.
    Writes `TableS1_reproduced.csv` (the reference for everything else) and `brms_model_spec.txt`.

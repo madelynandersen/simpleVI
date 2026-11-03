@@ -202,7 +202,7 @@ if (any(grepl("NumPyro|TFP", lvl_nt))) {   # only draw it once at least one NumP
 ## 5) The two 2 x 4 grids again, with the 150,000-iteration PyMC ADVI runs (TableS1_py_vi_*_150k.csv from
 ##    `python pymc_reproducing.py --iters 150000`) in place of the 10,000-iteration ones
 make_grid <- function(src, pal, fname, title, legend_rows = 2, ref_lab = ref_label, best_lab = best_label,
-                      only_coef = NULL, fig_w = 20, fig_h = 8.5) {   # only_coef: a coefficient for each response, e.g. c(Precipitation = sq, `Moisture deficit` = "MAP"): drawn as 1 row x 2 panels
+                      only_coef = NULL, fig_w = 20, fig_h = 8.5, title_centre = FALSE) {   # only_coef: a coefficient for each response, e.g. c(Precipitation = sq, `Moisture deficit` = "MAP"): drawn as 1 row x 2 panels
   r <- pmap(src, read_run) %>% compact() %>% bind_rows()
   lv <- src$label[src$label %in% unique(r$source)]
   d <- r %>%
@@ -243,6 +243,7 @@ make_grid <- function(src, pal, fname, title, legend_rows = 2, ref_lab = ref_lab
     theme(legend.position = "bottom", legend.text = element_text(size = 16), axis.title.x = element_text(size = 17), legend.key.width = unit(2, "cm"),
           axis.text.y = element_blank(), axis.ticks.y = element_blank(),
           strip.text = element_text(size = 15, face = "bold"))
+  if (title_centre) p <- p + theme(plot.title = element_text(hjust = 0.5), plot.title.position = "plot")   # centred over the whole figure
   ggsave(file.path("extra_figs", fname), p, width = fig_w, height = fig_h, dpi = 300)
   message("Wrote extra_figs/", fname)
 }
@@ -333,9 +334,9 @@ make_grid(tribble(~key,      ~file,                    ~label,
 if (any(file.exists(fd$file[-(1:2)]))) {
   make_grid(fd %>% mutate(label = ifelse(key == "r_nuts", "MCMC (authors' reference)", label)), pal_fd,
             "fig1_map2_map_1x2_full_defaults.png",
-            "MAP² on precipitation and MAP on moisture deficit: every package at full defaults vs MCMC (authors' reference)",
+            "MAP² on precipitation and MAP on moisture deficit: every package at full defaults vs MCMC",
             legend_rows = 2, ref_lab = "MCMC (authors' reference)", best_lab = "Global VI optimum",
-            only_coef = c(Precipitation = sq, `Moisture deficit` = "MAP"), fig_w = 12, fig_h = 4)
+            only_coef = c(Precipitation = sq, `Moisture deficit` = "MAP"), fig_w = 12, fig_h = 4, title_centre = TRUE)
 }
 
 message("Wrote fig1_stacked_vertical.png, fig1_grid_2x4.png and fig1_horizontal_vertical_intervals.png in extra_figs/")

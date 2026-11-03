@@ -46,20 +46,84 @@ Notes:
 
 ## Repository layout
 
-| Path | Contents |
-|---|---|
-| `modulars/` | Reusable code: running random restarts in each package, transforms, references, plotting |
-| `paper_vignettes/overall_bias_runners/` | One runner per package for the test-suite comparison, and `run_all_runners.sh`, which runs every package in its own conda environment |
-| `paper_vignettes/overall_default_bias_comparisons.ipynb` | Reads the saved runner results and draws the full-default vs. adjusted-settings heatmaps (Fig. 2, Figs. 14–17) |
-| `paper_vignettes/` (other notebooks) | Stand-alone examples; the ones used in the manuscript are listed below |
-| `paper_vignettes/changing_default_transforms/` | Minimal examples of changing the simplex transform in PyMC, NumPyro and Stan |
-| `single_MC/<model>/` | One folder per test model: its configuration, Stan model files, single-run notebooks, and random-restart notebooks (in `random_restarts/` where present) |
-| `Perennial_reproduction/` | Reanalysis of Journé et al. (2025) with NUTS and ADVI (Fig. 1, Figs. 10–11); run order in its README |
-| `envs/` | The four conda environments |
-| `tests/` | Unit tests (`python -m unittest discover -s tests -t .`, run in each package's environment) |
+```
+simpleVI/
+├── README.md, LICENSE, CITATION.cff
+├── pyproject.toml, setup.py      # installs modulars/ (pip install -e .)
+├── print_versions.py             # prints the installed package versions (Table 5)
+├── envs/                         # the four conda environments
+├── modulars/                     # shared code imported by every notebook and runner
+├── paper_vignettes/
+│   ├── overall_bias_runners/     # test-suite runners and heatmap code (Fig. 2, Figs. 14–17)
+│   ├── overall_default_bias_comparisons.ipynb
+│   ├── 3_3_tfp_transforms_matter.ipynb
+│   ├── changing_default_transforms/
+│   └── (other examples, not in the manuscript)
+├── single_MC/                    # one folder per test model (App. E), plus a Stan demo
+├── Perennial_reproduction/       # Journé et al. (2025) reanalysis (Fig. 1, Figs. 10–11)
+└── tests/                        # unit tests
+```
 
-The runner results (`paper_vignettes/overall_bias_results*/`) are not tracked in git, so on a fresh clone the
-runners have to be run before the heatmap notebooks can plot anything.
+### `modulars/`
+
+| File | Contents |
+|---|---|
+| `pymc_rr_test.py`, `numpyro_rr_test.py`, `tfp_rr_test.py`, `stan_rr_test.py` | Run random restarts of mean-field ADVI in each package and return the parameter trajectories. Stan only reports its final fit, so `stan_rr_test.py` reruns CmdStan at each tracked iteration count |
+| `distributions.py` | Data generation and closed-form posteriors for the conjugate models |
+| `elbo_computations.py` | NumPyro ELBO used to score restarts and pick the best variational approximation |
+| `sampled_kl.py` | Monte Carlo KL(q ‖ posterior), comparable across packages with different transforms |
+| `dirichlet.py`, `logistic_regression.py`, `radon.py` | Model-specific data loading, references and plots |
+| `plot_rr.py` | Random-restart plots (two single restarts, then the 1 MC and 100 MC averages with ±1 SD bands) |
+| `utils.py` | Configuration loading, saving and reading results, scoring candidate references |
+
+### `paper_vignettes/overall_bias_runners/`
+
+| File | Contents |
+|---|---|
+| `run_all_runners.sh` | Runs every package × model in its own conda environment; settings are in its header |
+| `pymc_runner.py`, `numpyro_runner.py`, `tfp_runner.py`, `stan_runner.py` | One runner per package; each defines the test-suite models in that package |
+| `bias_io.py` | Reads the saved runs and references and computes the bias and noise metrics |
+| `bias_heatmaps.py` | Builds the tables and draws the heatmaps for `overall_default_bias_comparisons.ipynb` |
+| `recompute_dirichlet_reference.py` | Recomputes the Multinomial–Dirichlet reference from the runner output (follows `rr_dirich_find_best.ipynb`) |
+
+The runners write to `paper_vignettes/overall_bias_results/`, `overall_bias_results_full_default/` and
+`overall_bias_results_1mc/`. These are not tracked in git, so on a fresh clone the runners have to be run
+before `overall_default_bias_comparisons.ipynb` can plot anything.
+
+### `single_MC/`
+
+Each test-model folder holds the model's configuration (data seed, priors and, where there is no closed form,
+the reference solution), its Stan program, single-run notebooks per package, and random-restart notebooks
+(`rr_<package>_*.ipynb`, in `random_restarts/` where that subfolder exists).
+
+| Folder | Model (App. E) | Reference |
+|---|---|---|
+| `1dgaussian_knownvar/` | E.1 Gaussian–Gaussian; also Fig. 4 | closed-form posterior (100 observations) |
+| `1dbeta_binomial/` | E.2 Beta–Bernoulli | best variational approximation in `beta_config.json` (`compute_best_reference.py`; `random_restarts/elbo_space_stan.ipynb` walks Stan's path on the exact ELBO) |
+| `gamma_poisson/` | E.3 Gamma–Poisson | closed-form log-normal VI optimum |
+| `gamma_exponential/` | E.4 Gamma–Exponential | closed-form log-normal VI optimum |
+| `invgamma_gaussianknownmean/` | E.5 Inverse-Gamma–Normal | best variational approximation in `invgamma_config.json` |
+| `multinomial_dirichlet/` | E.6 Multinomial–Dirichlet; also Figs. 5–7 | best variational approximation in `dirichlet_config.json` (`rr_dirich_find_best.ipynb`) |
+| `multidim_gaussian_knowncovar/` | E.7 High-dimensional (40-d) Gaussian–Gaussian | closed form (analytic posterior) |
+| `logistic_regression/` | E.8 Bayesian logistic regression | `best_variational_reference.csv` (`compute_best_reference.py`) |
+| `radon_example/` | E.9 Hierarchical radon model | `pymc_tutorial/best_reference_values.csv` (`compute_best_reference.py`); data in `data/` |
+| `stan_conj1dgaussian_demo/` | Not in the test suite: a conjugate 1D Gaussian in Stan | — |
+
+The models as fitted for Fig. 2 are defined in the runners (`paper_vignettes/overall_bias_runners/<package>_runner.py`),
+which read the same configuration files.
+
+### `Perennial_reproduction/`
+
+Scripts in R and Python that refit the Table S1 model of Journé et al. (2025) with NUTS and with ADVI in every
+package. Their README gives the run order and lists every file. The NUTS fit (`TableS1_reproduced.csv`) and the
+global VI optimum (`TableS1_best_vi.csv`) are included, so the ADVI runs and figures can be made without
+rerunning those two steps.
+
+### `tests/`
+
+Unit tests for transforms, log densities, references, KL estimates, saved-result round trips, defaults and
+reproducibility. Packages that are not installed are skipped, so run the suite in each environment:
+`python -m unittest discover -s tests -t .`
 
 ## Reproducing the manuscript
 
@@ -72,7 +136,7 @@ companion repository [github-advi-usage](https://github.com/madelynandersen/gith
 | Tables 2 and 4 (download counts) | Retrieved from PyPI download statistics and CRAN logs (`cranlogs`); no code in this repository | — |
 | Table 3 (§4) and Table 9 (App. D): default usage on GitHub, by repository and by call site | `github_advi_usage/component_defaults.py` in [github-advi-usage](https://github.com/madelynandersen/github-advi-usage) | see that repository |
 | Fig. 9 (App. D, TFP optimizer choices on GitHub) | `github_advi_usage/plot_tfp_adam.py` in [github-advi-usage](https://github.com/madelynandersen/github-advi-usage) | see that repository |
-| Fig. 1 (§5), Figs. 10–11 (App. F) | `Perennial_reproduction/` (run order in its README). `extra_figs.R` draws the figures from the saved tables: `extra_figs/fig1_map2_map_1x2_full_defaults.png` (Fig. 1), `extra_figs/fig1_grid_2x4_full_defaults.png` (Fig. 10) and `extra_figs/fig1_grid_2x4_long_defaults.png` (Fig. 11) | R; `pymc_env_pm`, `num_pyro`, `tfp_2` |
+| Fig. 1 (§5), Figs. 10–11 (App. F) | `Perennial_reproduction/` (run order in its README). After the ADVI runs, `extra_figs.R` draws the figures from their output tables: `extra_figs/fig1_map2_map_1x2_full_defaults.png` (Fig. 1), `extra_figs/fig1_grid_2x4_full_defaults.png` (Fig. 10) and `extra_figs/fig1_grid_2x4_long_defaults.png` (Fig. 11) | R; `pymc_env_pm`, `num_pyro`, `tfp_2` |
 | Fig. 2 (§6), Figs. 14–17 (App. H) | 1. `paper_vignettes/overall_bias_runners/run_all_runners.sh` runs the adjusted settings for every package × model and saves to `paper_vignettes/overall_bias_results/`; 2. `FULL_DEFAULT=1 ./run_all_runners.sh` runs the full-default fits into `paper_vignettes/overall_bias_results_full_default/`; 3. `Perennial_reproduction/run_journe_restarts.sh`, once as is and once with `FULL_DEFAULTS=1`, adds the Journé et al. row; 4. `paper_vignettes/overall_default_bias_comparisons.ipynb` draws the heatmaps from the saved results (`PLOT_ONLY = True` skips the runs). The TFP 1 MC, 10,000-iteration runs in the right-hand panel are read from `paper_vignettes/overall_bias_results_1mc/` | runners: one per package (set in the scripts); notebook: `tfp_2` |
 | Fig. 3 (§7), Figs. 12–13 (App. G) | `paper_vignettes/3_3_tfp_transforms_matter.ipynb` | `tfp_2` |
 | Fig. 4a (§8–9) | `single_MC/1dgaussian_knownvar/3_1_pymc_100obs.ipynb` (the manuscript uses 3 million iterations: set `SIMPLEVI_PYMC_DEMO_ITERS=3000000`; the default is 300,000) | `pymc_env_pm` |
@@ -82,7 +146,7 @@ companion repository [github-advi-usage](https://github.com/madelynandersen/gith
 | Fig. 5 (App. C.2) | `single_MC/multinomial_dirichlet/rr_dirich_2d_transform_compare.ipynb` | `pymc_env_pm` |
 | Figs. 6–7 and the Dirichlet ELBO comparison (App. C.2) | `single_MC/multinomial_dirichlet/simplex_transform_differences.ipynb` | `pymc_env_pm` |
 | Stick-breaking transform for the Multinomial–Dirichlet in PyMC and Stan (Fig. 2, App. C.2) | `paper_vignettes/changing_default_transforms/change_simplex_transform_{pymc,numpyro,stan}.ipynb` | `pymc_env_pm`, `num_pyro`, `stan3` |
-| Test-suite models (App. E) | `single_MC/<model>/` configurations; the model code used for Fig. 2 is in `paper_vignettes/overall_bias_runners/<package>_runner.py` | — |
+| Test-suite models (App. E) | `single_MC/<model>/` (see the [`single_MC/` table](#single_mc) for which folder is which model); the model code used for Fig. 2 is in `paper_vignettes/overall_bias_runners/<package>_runner.py` | — |
 
 The runners take hours to days in total (most of it Stan, where every tracked iteration is a separate CmdStan
 run). Each finished seed is cached, and rerunning `run_all_runners.sh` resumes where it stopped. Settings can

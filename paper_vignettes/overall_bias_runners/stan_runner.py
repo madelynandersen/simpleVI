@@ -174,8 +174,8 @@ Model setups, copied from the single_MC Stan random-restart notebooks
 def model_1d_gaussian():
     """single_MC/1dgaussian_knownvar/random_restarts/rr_stan.ipynb
 
-    n_samples = 0 (no observations, so the posterior is the prior), as in the
-    notebook and the 3_1 notebooks; every package's runner uses the same setup.
+    n_samples = 100 observations; every package's runner uses the same setup
+    (n_samples = 0 gives no observations, so the posterior is the prior, as in the 3_1 notebooks).
     """
     from modulars import gaussian_1d, gaussian_1d_posterior
     nb_dir = SINGLE_MC / "1dgaussian_knownvar" / "random_restarts"
@@ -183,7 +183,7 @@ def model_1d_gaussian():
 
     mu_prior, sigma_prior = 0.0, 10.0
     sigma_like = 1.0
-    n_samples = 0
+    n_samples = 100
     mu_like = 3.0
 
     data = gaussian_1d(n_samples, mu_like, sigma_like, seed=0).astype(np.float32)
@@ -208,7 +208,7 @@ def model_1d_gaussian():
     setups, failures = run_stan_seeds(nb_dir / "stan_1dgaussian_knownvar.stan", stan_data, PARAM_COLUMNS, LOG_COLUMNS,
                                       seed_offset=100)
     return {"1d_gaussian": dict(setups=setups, coordinates=["mu"], best_mean=true_mu_post, best_std=true_sigma_post,
-                                reference_source="gaussian_1d_posterior (analytic, n_samples=0, i.e. the prior)")}, failures, 100
+                                reference_source=f"gaussian_1d_posterior (analytic, n_samples={n_samples})")}, failures, 100
 
 
 def model_beta_binomial():
