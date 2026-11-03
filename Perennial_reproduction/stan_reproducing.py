@@ -3,7 +3,7 @@
 model. The Stan program and data are the ones brms generates (export them once with `Rscript export_stan_model.R`,
 which writes stan_model/journe_brms.stan and stan_model/journe_standata.json), so the model is exactly the brms model.
 
-Setups (the two Stan setups of paper_vignettes/overall_bias_comparisons.ipynb):
+Setups (the two Stan setups of paper_vignettes/overall_default_bias_comparisons.ipynb):
   default    every CmdStan ADVI default except iter, tol_rel_obj=1e-6, output_samples=10000
   mc100      as default, plus grad_samples=100 (100 Monte-Carlo samples per gradient step, "adjusted")
 Both run --iters iterations (default 25,000).
@@ -12,7 +12,7 @@ Modes (run from the Perennial_reproduction folder, in the stan3 conda env):
   python stan_reproducing.py                Table S1 fits: seeds 11..20 tried in order and the first that does not fail
                                             is reported, as in pymc_reproducing.py. Writes TableS1_stan_<setting>.csv
                                             (and TableS1_stan_<setting>_vs_NUTS.csv if TableS1_reproduced.csv exists).
-  python stan_reproducing.py --restarts     random restarts for overall_bias_comparisons.ipynb (seeds 0..4 by default):
+  python stan_reproducing.py --restarts     random restarts for overall_default_bias_comparisons.ipynb (seeds 0..4 by default):
                                             CmdStan only reports the final fit, so each tracked iteration k is a
                                             separate rerun of that seed with iter=k: every --track-every (10) of the
                                             last --window (500) iterations, i.e. 50 reruns (simpleVI's

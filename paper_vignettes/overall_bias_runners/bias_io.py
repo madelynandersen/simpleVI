@@ -379,7 +379,7 @@ def radon_outputs(setups, param_names, best_mean, best_std, transform_fn):
 
 
 """
-Metrics behind the bias / noise heatmaps (overall_bias_comparisons.ipynb)
+Metrics behind the bias / noise heatmaps (overall_default_bias_comparisons.ipynb)
 """
 def per_coordinate_metrics(track, best_mean, best_std, window, ddof=1, zero_tol=1e-12, noise_scale="relative_sd"):
     """All seven metrics for every coordinate of one (model, package, setup).

@@ -2,7 +2,7 @@
 
 --restarts runs random restarts of every ADVI setup of one package on the Table S1 model and saves the
 last `window` iterations of the mean and SD of the 8 Table S1 coefficients, in the layout read by
-paper_vignettes/overall_bias_comparisons.ipynb (model key "journe", through
+paper_vignettes/overall_default_bias_comparisons.ipynb (model key "journe", through
 paper_vignettes/overall_bias_runners/bias_io.py):
 
     <results_dir>/journe/<package>_tracking.csv.gz, <package>_reference.csv, <package>_run_info.json
@@ -35,7 +35,7 @@ COORDINATES_NOTE = ("coordinates are the 8 Table S1 fixed effects (intercept, MA
 
 
 def add_restart_args(ap, default_seeds, seeds_help=None):
-    g = ap.add_argument_group("random restarts for paper_vignettes/overall_bias_comparisons.ipynb")
+    g = ap.add_argument_group("random restarts for paper_vignettes/overall_default_bias_comparisons.ipynb")
     g.add_argument("--restarts", action="store_true",
                    help="run --n-seeds random restarts of every setup and save the last --window iterations of the "
                         "8 Table S1 coefficients' mean and SD (instead of the Table S1 fits)")

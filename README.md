@@ -51,7 +51,6 @@ Notes:
 | `modulars/` | Reusable code: running random restarts in each package, transforms, references, plotting |
 | `paper_vignettes/overall_bias_runners/` | One runner per package for the test-suite comparison, and `run_all_runners.sh`, which runs every package in its own conda environment |
 | `paper_vignettes/overall_default_bias_comparisons.ipynb` | Reads the saved runner results and draws the full-default vs. adjusted-settings heatmaps (Fig. 2, Figs. 14–17) |
-| `paper_vignettes/overall_bias_comparisons.ipynb` | Reads the saved adjusted-setting runs only and draws the same heatmaps without the full-default panel |
 | `paper_vignettes/` (other notebooks) | Stand-alone examples; the ones used in the manuscript are listed below |
 | `paper_vignettes/changing_default_transforms/` | Minimal examples of changing the simplex transform in PyMC, NumPyro and Stan |
 | `single_MC/<model>/` | One folder per test model: its configuration, Stan model files, single-run notebooks, and random-restart notebooks (in `random_restarts/` where present) |
@@ -94,9 +93,6 @@ be changed with environment variables or flags; see the header of `run_all_runne
 These are not part of the manuscript.
 
 - [Tracking parameters in constrained vs. unconstrained space](paper_vignettes/example_analysis.ipynb)
-- Default initialization in each package: `paper_vignettes/3_2_{pymc,numpyro,tfp}_initialization.ipynb` and
-  `paper_vignettes/3_2_pymc_support_points.ipynb`
-- [Initialization sensitivity on a bimodal beta in NumPyro](paper_vignettes/3_5_numpyro_betamix_initialization_challenges.ipynb)
 - Stan's ADVI defaults: [step-size adaptation, MC samples and tolerance](paper_vignettes/stan_default_demos.ipynb)
   and [convergence tolerance](paper_vignettes/stan_tolerance_demo.ipynb)
 - [PyMC trajectories on the exact objective for a 1D Gaussian with no observations](paper_vignettes/1d_gaussian_no_obs_advi_optimizer_space.ipynb)
@@ -106,6 +102,6 @@ These are not part of the manuscript.
   [PyMC](single_MC/1dgaussian_knownvar/random_restarts/rr_pymc.ipynb),
   [NumPyro](single_MC/1dgaussian_knownvar/random_restarts/rr_numpyro.ipynb),
   [TFP](single_MC/1dgaussian_knownvar/random_restarts/rr_tfp.ipynb),
-  [Stan](single_MC/1dgaussian_knownvar/random_restarts/rr_stan.ipynb),
-  [Pyro](single_MC/1dgaussian_knownvar/random_restarts/rr_pyro.ipynb) (Pyro is not part of the manuscript)
+  [Stan](single_MC/1dgaussian_knownvar/random_restarts/rr_stan.ipynb)
 - Random-restart analyses for the other test models are in their [`single_MC`](single_MC) folders.
+- [A conjugate 1D Gaussian in Stan](single_MC/stan_conj1dgaussian_demo/stan_conj1dgaussian_demo.ipynb)

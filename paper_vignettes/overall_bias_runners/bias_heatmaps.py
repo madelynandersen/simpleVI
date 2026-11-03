@@ -1,7 +1,6 @@
 """Tables and heatmaps of the overall bias / noise comparisons.
 
-Shared by overall_bias_comparisons.ipynb and overall_default_bias_comparisons.ipynb, so both notebooks compute
-and draw every metric with the same code. Each notebook only reads results and changes settings:
+Used by overall_default_bias_comparisons.ipynb, which only reads results and changes settings:
 
     S = bias_heatmaps.default_settings(RESULTS_DIR)      # every setting, with the defaults below
     S.COLUMN_GROUPS = [...]                               # change what differs

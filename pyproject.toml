@@ -52,12 +52,6 @@ stan = [
   "cmdstanpy>=1.2",
 ]
 
-# Pyro / PyTorch stack (only for the rr_pyro*.ipynb examples; not used in the manuscript)
-pyro = [
-  "torch>=2.0",
-  "pyro-ppl>=1.9",
-]
-
 # Notebook execution helpers
 notebooks = [
   "ipykernel>=6",

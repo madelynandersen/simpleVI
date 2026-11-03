@@ -24,7 +24,7 @@ Usage (run from the folder that holds species.ecoregion.data.csv):
   python pymc_reproducing.py
   python pymc_reproducing.py --only mcmc,vi_adam
 Iterations: --iters N sets the number of ADVI iterations (default 10000 = the PyMC default). With any other N the
-output files get a suffix (e.g. TableS1_py_vi_default_75k.csv), so the 10k tables used by compare_plots.R are not
+output files get a suffix (e.g. TableS1_py_vi_default_75k.csv), so the 10k tables are not
 overwritten.
 
 Trajectory plots: the ADVI fits record the mean and SD of the 8 Table S1 coefficients at every iteration; after the
@@ -34,7 +34,7 @@ and the best VB approximation (TableS1_best_vi.csv) as a solid black line; runs 
 dashed vertical line at 10000 marked "default number of iterations". Needs matplotlib.
 Random restarts (--restarts): seeds 0..9 (--n-seeds) of default, 100 MC, Adam and Adam + 100 MC, 75,000 iterations
 (--iters), keeping the last 500 iterations (--window) of the 8 coefficients' mean and SD for
-paper_vignettes/overall_bias_comparisons.ipynb (see journe_restarts.py). Needs simpleVI's modulars.
+paper_vignettes/overall_default_bias_comparisons.ipynb (see journe_restarts.py). Needs simpleVI's modulars.
 With --restarts --full_defaults: only the default fit, for PyMC's default 10,000 iterations, saved to
 overall_bias_results_full_default/ with each fit's time (paper_vignettes/overall_default_bias_comparisons.ipynb).
 --timing_analysis: instead of the normal run, time every ADVI setting (default, obj_n_mc=100, Adam, Adam + obj_n_mc=100 and the full defaults;
@@ -316,7 +316,7 @@ TERM_TITLES = {"muPrB_Intercept": "Precipitation: Intercept", "muPrB_MAT": "Prec
                "muDeB_polyMAP21": "Moisture deficit: MAP", "muDeB_polyMAP22": "Moisture deficit: MAP\u00b2"}
 BEST_FILE = "TableS1_best_vi.csv"
 DEFAULT_ITERS = 10000
-RESTART_ITERS = 75000      # --restarts (overall_bias_comparisons.ipynb)
+RESTART_ITERS = 75000      # --restarts (overall_default_bias_comparisons.ipynb)
 
 
 def _grid_plot(key, ref_col, ylabel, title, fname, nuts, best, n_iter, out):

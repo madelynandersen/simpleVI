@@ -9,7 +9,7 @@ Pipeline (run from the Perennial_reproduction folder):
   2. python best_vi.py pymc            # 50 restarts of PyMC ADVI             -> best_vi/pymc_restarts_moments.csv
   3. python best_vi.py score           # NumPyro ELBO of all restarts, picks the best
                                        #   -> best_vi/restart_elbos.csv, TableS1_best_vi.csv
-  (compare_plots.R then adds the "Best VI" line when it finds TableS1_best_vi.csv.)
+  (extra_figs.R then adds the "Global VI optimum" line when it finds TableS1_best_vi.csv.)
 
 Every restart is a diagonal Normal over the SAME unconstrained coordinates, in this order
 (the order PyMC uses; best_vi_stan.R writes Stan's fits in the same order):

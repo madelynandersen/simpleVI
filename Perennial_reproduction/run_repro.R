@@ -53,7 +53,7 @@ eval(parse(text = code), envir = globalenv())   # creates data.scaling, formMAPq
 
 tab <- fixef(pppMAPquad) %>% as.data.frame() %>% rownames_to_column("term") %>%
   mutate(seed = nuts_seed, method = "R brms NUTS (authors' code)")
-if (!diag_only) write_csv(tab, "TableS1_reproduced.csv")   # full precision (used by run_repro_vi.R, pymc_reproducing.py, compare_plots.R)
+if (!diag_only) write_csv(tab, "TableS1_reproduced.csv")   # full precision (used by run_repro_vi.R, pymc_reproducing.py, extra_figs.R)
 # Exact model definition (priors + Stan code) so other implementations can be checked against it
 if (!diag_only) writeLines(c("## prior_summary", capture.output(print(prior_summary(pppMAPquad))),
              "", "## stancode", stancode(pppMAPquad)), "brms_model_spec.txt")

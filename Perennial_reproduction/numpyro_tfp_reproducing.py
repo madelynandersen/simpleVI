@@ -31,7 +31,7 @@ The two packages normally live in separate conda environments (num_pyro and tfp_
 Run from the folder that holds species.ecoregion.data.csv and pymc_reproducing.py. Other options:
   --only default | mc100      run just one setting
   --iters N                   number of optimisation steps (default 75000; use e.g. 2000 for a quick test)
-  --restarts                  random restarts for paper_vignettes/overall_bias_comparisons.ipynb: seeds 0..9
+  --restarts                  random restarts for paper_vignettes/overall_default_bias_comparisons.ipynb: seeds 0..9
                               (--n-seeds) of both settings, --iters steps, keeping the last 500 (--window) iterations
                               of the 8 coefficients' mean and SD (see journe_restarts.py); TFP is XLA-compiled here
   --restarts --full_defaults   the same for the full-default fit only (1 MC sample; NumPyro 30,000 steps, TFP 10,000
@@ -337,7 +337,7 @@ def tfp_restart(d, n_mc, iters, seed, track_start, bare=False):
 
 
 def run_restarts(args):
-    """--restarts: RESTART_SETUPS for seeds 0..n_seeds-1, saved for paper_vignettes/overall_bias_comparisons.ipynb."""
+    """--restarts: RESTART_SETUPS for seeds 0..n_seeds-1, saved for paper_vignettes/overall_default_bias_comparisons.ipynb."""
     import journe_restarts as J
 
     package = args.backend

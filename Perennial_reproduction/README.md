@@ -14,12 +14,12 @@ fitted with brms. This folder runs the authors' own NUTS code, then fits the sam
 | `run_repro_vi.R` | R ADVI (rstan), default and adjusted settings, compared with the NUTS fit* |
 | `pymc_reproducing.py` | PyMC copy of the model: NUTS and three ADVI setups* |
 | `best_vi_stan.R`, `best_vi.py` | Best-variational-approximation search (50 Stan + 50 PyMC restarts, ranked by NumPyro ELBO)* |
-| `run_best_vi_parallel.sh` | Runs steps 4–6 in parallel jobs, then step 7* |
-| `compare_plots.R` | Figures and table comparing all runs with R NUTS* |
-| `extra_figs.R` | Optional alternative layouts of Figure 1, from the saved tables (writes `extra_figs/`)* |
+| `run_best_vi_parallel.sh` | Runs steps 4–6 in parallel jobs, then step 8* |
+| `numpyro_tfp_reproducing.py` | NumPyro and TFP mean-field ADVI on the same model (default, 100 MC, full defaults, and TFP without bijectors)* |
+| `run_stan_full_defaults.R` | rstan ADVI with every argument at its default except the seed* |
+| `extra_figs.R` | Figures 1, 10 and 11 of the manuscript, and other layouts, from the saved tables (writes `extra_figs/`)* |
 | `stan_reproducing.py`, `export_stan_model.R` | CmdStanPy version of the R Stan ADVI fits (default and 100 MC, 25,000 iterations), run on the brms-generated Stan program and data that `export_stan_model.R` writes to `stan_model/`* |
-| `journe_restarts.py`, `run_journe_restarts.sh` | `--restarts` mode of the PyMC, NumPyro/TFP and Stan scripts: random restarts for the "Journé et al. example" row of `paper_vignettes/overall_bias_comparisons.ipynb`* |
-| `seed_spread.py` | Optional: spread of default PyMC ADVI over 50 seeds (not used in the manuscript)* |
+| `journe_restarts.py`, `run_journe_restarts.sh` | `--restarts` mode of the PyMC, NumPyro/TFP and Stan scripts: random restarts for the "Journé et al. example" row of `paper_vignettes/overall_default_bias_comparisons.ipynb`* |
 | `R_package_versions.csv` | R version, CmdStan version and every R package (with dependencies) used by these scripts* |
 | `model.coefficients.best.csv`, `output.climwin.csv`, `relative.contribution.sitelevel.csv`, `renv.lock` | Other files from the OSF archive; not used by these scripts |
 
@@ -38,7 +38,7 @@ fitted with brms. This folder runs the authors' own NUTS code, then fits the sam
 
 ## Run order
 
-Steps 2-5 need `TableS1_reproduced.csv` from step 1 for their comparison tables. Step 6 needs the files from steps 4 and/or 5 (it scores whichever exist). Step 7 needs step 1; every other table is optional.
+Steps 2-5 need `TableS1_reproduced.csv` from step 1 for their comparison tables. Step 6 needs the files from steps 4 and/or 5 (it scores whichever exist). Step 8 draws whichever figures its input tables exist for.
 
 1. **`run_repro.R`** (R, Source). The authors' NUTS fit.
    Writes `TableS1_reproduced.csv` (the reference for everything else) and `brms_model_spec.txt`.
@@ -59,17 +59,25 @@ Steps 2-5 need `TableS1_reproduced.csv` from step 1 for their comparison tables.
    Writes `best_vi/restart_elbos.csv` and `TableS1_best_vi.csv` (winner's package and seed are in its `method` and `seed` columns).
    For the manuscript, the best of the 100 restarts was PyMC seed 27; the best Stan restart (seed 7) was 0.017 nats lower.
 
-Steps 4–7 can also be run together, in parallel, with
-`nohup caffeinate -i bash run_best_vi_parallel.sh > best_vi/logs/run.log 2>&1 &`.
-7. **`compare_plots.R`** (R, Source). Reads every table above (any missing optional file is skipped with a message).
-   Writes `fig1_coefficients.png` (forest plot plus table of offsets and SD errors), `fig2_effect_curves.png`
-   and `comparison_table_all_vs_NUTS.csv`.
+7. **Full-default and longer runs** of each package, for Figures 1, 10 and 11:
+   - `Rscript run_stan_full_defaults.R` writes `TableS1_stan_full_defaults.csv`; the 50,000-iteration Stan run is
+     `TableS1_VI_default.csv` from step 2.
+   - `python pymc_reproducing.py --full_defaults` writes `TableS1_py_vi_full_defaults.csv`;
+     `python pymc_reproducing.py --iters 150000` writes `TableS1_py_vi_*_150k.csv`.
+   - `python numpyro_tfp_reproducing.py --backend numpyro --full_defaults` (env `num_pyro`) writes
+     `TableS1_np_full_defaults.csv`; without `--full_defaults` it writes the 75,000-iteration `TableS1_np_default.csv`.
+   - `python numpyro_tfp_reproducing.py --backend tfp --full_defaults` (env `tfp_2`) writes
+     `TableS1_tfp_full_defaults.csv`; `--backend tfp --default_tfp` writes the 75,000-iteration `TableS1_tfp_bare.csv`.
+8. **`Rscript extra_figs.R`**. Reads the tables above (missing ones are skipped with a message) and writes into
+   `extra_figs/`: `fig1_map2_map_1x2_full_defaults.png` (Figure 1), `fig1_grid_2x4_full_defaults.png` (Figure 10) and
+   `fig1_grid_2x4_long_defaults.png` (Figure 11), plus other layouts.
 
-Minimal run (no best-VI search): steps 1, 2, 3, 7.
+Steps 4–6 and 8 can also be run together, in parallel, with
+`nohup caffeinate -i bash run_best_vi_parallel.sh > best_vi/logs/run.log 2>&1 &`.
 
 ## Random restarts for the overall bias comparison (`--restarts`)
 
-The "Journé et al. example" row of `paper_vignettes/overall_bias_comparisons.ipynb` uses random restarts of every
+The "Journé et al. example" row of `paper_vignettes/overall_default_bias_comparisons.ipynb` uses random restarts of every
 ADVI setup, saving only the mean and SD of the 8 Table S1 coefficients over the last 500 iterations of each run
 (to `paper_vignettes/overall_bias_results/journe/`). All four packages are compared with `TableS1_best_vi.csv` (step 6).
 
@@ -120,19 +128,3 @@ ADVI results depend on the seed, and the first successful seed is not checked fo
   variability in perennial plants and their implications for climate change risks*, Nature Communications 16:9226,
   OSF project https://osf.io/vaucp/, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
   They are included unmodified.
-
-## Timing analysis (`--timing_analysis`)
-
-Times every variational setting of each package over seeds 11-20 (`--timing_seeds "11-20"` or `"11,13"` to change), plus Stan MCMC (NUTS) as a reference. One attempt per seed, no retries (failures are recorded); the time is the **total wall time of a seed** (fit + drawing the approximation + summarising), with no trajectory recording. No Table S1 files are written. Compile / JIT time sits in the first fits of the Python packages (see `run_order`); Stan's model is compiled once and logged on its own `stan_compile` row.
-
-| Package | Command | Settings timed |
-|---|---|---|
-| PyMC | `python pymc_reproducing.py --timing_analysis` | `full_defaults` (10,000 iterations); `vi_default`, `vi_mc100`, `vi_adam`, `vi_adam_mc100` at `--iters` (default **150,000**) |
-| NumPyro | `python numpyro_tfp_reproducing.py --backend numpyro --timing_analysis` | `default`, `mc100` (`--iters`, default 75,000) and `full_defaults` (30,000) |
-| TFP | `python numpyro_tfp_reproducing.py --backend tfp --timing_analysis` | `default`, `mc100`, `bare`, `bare_mc100` (`--iters`, default 75,000) and `full_defaults` (10,000) |
-| Stan, rstan (R) | `Rscript run_repro_vi.R --timing_analysis` | VI: `default`, `adjusted` (50,000 max iterations), `full_defaults` (10,000 max); MCMC: `mcmc` (NUTS, 4 chains x 10,000 iterations) |
-| Stan, CmdStanPy | `python stan_reproducing.py --timing_analysis` (env `stan3`) | VI: `default`, `adjusted` (same settings as the rstan runs, `require_converged=False`) and `full_defaults` |
-
-`--only a,b` restricts the settings. Outputs: `timing_<package>.csv` (one row per seed; `iterations_run` is the number of iterations actually run, read from the printed ELBO table for Stan VI), `timing_<package>_summary.csv`. Re-running a setting with the same iterations replaces its rows; other settings are kept.
-
-`bash run_timing_analysis.sh` runs everything one package at a time and finishes with `Rscript make_timing_figs.R`, which writes `extra_figs/timing_analysis.png` (wall time per seed), `extra_figs/timing_per_iteration.png` (milliseconds per iteration) and `extra_figs/timing_summary_all.csv`. Layout: full defaults | defaults run for longer | adjusted settings | Stan MCMC; the legend separates Stan MCMC, Stan VI (rstan) and Stan VI (CmdStanPy).

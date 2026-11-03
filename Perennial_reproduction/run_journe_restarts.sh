@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Random restarts of the Table S1 model for paper_vignettes/overall_bias_comparisons.ipynb ("Journé et al. example"
+# Random restarts of the Table S1 model for paper_vignettes/overall_default_bias_comparisons.ipynb ("Journé et al. example"
 # row): PyMC, NumPyro and TFP in parallel (75,000 iterations, 10 seeds), then Stan (25,000 iterations, 5 seeds,
 # one CmdStan rerun per tracked iteration). Each step skips results that are already saved and resumes from the
 # per-seed cache, so rerunning this script picks up where it stopped.

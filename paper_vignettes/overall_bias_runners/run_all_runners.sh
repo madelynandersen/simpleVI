@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run every package x model random-restart runner for overall_bias_comparisons.ipynb.
+# Run every package x model random-restart runner for overall_default_bias_comparisons.ipynb.
 #
 # Each (package, model) pair runs as its own process in that package's conda
 # environment and writes to $RESULTS_DIR/<model>/<package>_*. Existing results

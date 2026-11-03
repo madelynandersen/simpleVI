@@ -22,5 +22,5 @@ wait
 echo "all restarts finished: $(date)"
 
 "$PY_SCORE" best_vi.py score
-Rscript compare_plots.R
+Rscript extra_figs.R
 echo "plots finished: $(date)"

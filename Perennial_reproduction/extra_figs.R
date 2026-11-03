@@ -13,8 +13,8 @@
 #   fig1_grid_2x4_global_vi_optimum_vs_mcmc.png   only the global VI optimum and the authors' reference, called MCMC here
 #   fig1_map2_map_1x2_full_defaults.png   MAP² on precipitation and MAP on moisture deficit (1 x 2 panels): every full-defaults run + the two references
 #   fig1_horizontal_vertical_intervals.png   all 8 coefficients side by side in one row, intervals drawn vertically
-# Styling matches fig1_coefficients_no_table.png in compare_plots.R (R MCMC dashed black, Global VI optimum black,
-# both thick and first in the legend; other runs by colour only). Each panel has its own x-axis range because the
+# Styling: R MCMC dashed black, Global VI optimum black,
+# both thick and first in the legend; other runs by colour only. Each panel has its own x-axis range because the
 # coefficients differ a lot in size. Needs: tidyverse only.
 
 suppressPackageStartupMessages(library(tidyverse))
@@ -71,7 +71,7 @@ coefs$slot <- factor(as.character(coefs$source),
                      levels = c(ref_label, intersect(best_label, levels(coefs$source)),
                                 setdiff(levels(coefs$source), c(ref_label, best_label))))
 
-# same legend/line styling as compare_plots.R figure 1
+# legend order: the two references first, then the other runs
 legend_order <- c(ref_label, intersect(best_label, lvl), setdiff(lvl, c(ref_label, best_label)))
 thick <- legend_order[legend_order %in% c(ref_label, best_label)]
 cols1 <- all_cols[legend_order]; cols1[thick] <- "#000000"
