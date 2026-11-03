@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, Normalize
+from matplotlib.patches import Rectangle
 
 import bias_io
 from bias_io import per_coordinate_metrics   # lives in bias_io.py so it can be unit tested
@@ -284,7 +285,7 @@ def default_settings(results_dir):
         "std_between": "Relative between-seed noise of the variational approximation of the posterior standard deviation",
         "mean_within": "Relative within-seed noise of the variational approximation of the posterior mean",
         "std_within": "Relative within-seed noise of the variational approximation of the posterior standard deviation",
-        "mean_std_units": r"Error of the variational approximation of the posterior mean in best VB approx $\sigma^*$ units",
+        "mean_std_units": r"Error of the variational approximation of the posterior mean in global VI optimum $\sigma^*$ units",
     }
     s.NOISE_DEFINITIONS = {   # the noise metrics' formulas for each NOISE_SCALE (S.METRIC_DEFINITIONS picks one)
         "relative_sd": {
@@ -315,13 +316,13 @@ def default_settings(results_dir):
         "one row per coordinate, coordinate summaries below"
     )
     s.COLORBAR_TITLES = {   # what each metric is divided by (matplotlib renders the $...$ math; plotly shows μ* / σ*)
-        "mean_bias": r"in units of the best VB approx of $\mu^*$",
-        "std_bias": r"in units of the best VB approx of $\sigma^*$",
-        "mean_between": r"in units of the best VB approx of $\mu^*$",
-        "std_between": r"in units of the best VB approx of $\sigma^*$",
-        "mean_within": r"in units of the best VB approx of $\mu^*$",
-        "std_within": r"in units of the best VB approx of $\sigma^*$",
-        "mean_std_units": r"in units of the best VB approx of $\sigma^*$",
+        "mean_bias": r"in units of the global VI opt of $\mu^*$",
+        "std_bias": r"in units of the global VI opt of $\sigma^*$",
+        "mean_between": r"in units of the global VI opt of $\mu^*$",
+        "std_between": r"in units of the global VI opt of $\sigma^*$",
+        "mean_within": r"in units of the global VI opt of $\mu^*$",
+        "std_within": r"in units of the global VI opt of $\sigma^*$",
+        "mean_std_units": r"in units of the global VI opt of $\sigma^*$",
     }
     s.X_AXIS_TITLE = ""                # x-axis title under the panels ("" = none)
     s.Y_AXIS_TITLE = "Model"
@@ -346,6 +347,7 @@ def default_settings(results_dir):
     s.MISSING_TEXT = "–"
     s.ZERO_REF_MARK = "‡"
     s.FAILED_SEED_MARK = "§"          # cells where some seeds failed (left out of that cell)
+    s.FAILED_SEED_HATCH = "///"        # matplotlib: black hatching on those cells, kept off the text, instead of the mark (None: mark)
     s.FOOTNOTES = {
         "tfp": f"{s.TFP_MARK} TFP with manually added transformation when required.",
         "zero_ref": f"{s.ZERO_REF_MARK} best posterior mean μ* is 0, so values relative to μ* are not defined "
@@ -354,8 +356,8 @@ def default_settings(results_dir):
         "journe": "Journé et al. example: the Dirichlet regression of Table S1 in Journé et al. (2025), treated as an "
                   "8-dimensional model; each cell is the {agg} of the metric over the 8 Table S1 fixed effects (intercept, "
                   "MAT, MAP and MAP² for each of the two modelled response categories, PrB and DeB). The group-level terms and the "
-                  "Dirichlet precision φ are not included. All four packages are compared with one shared best variational "
-                  "approximation: the best of 100 Stan and PyMC random restarts, ranked by the NumPyro ELBO.",
+                  "Dirichlet precision φ are not included. All four packages are compared with one shared global VI "
+                  "optimum: the best of 100 Stan and PyMC random restarts, ranked by the NumPyro ELBO.",
         "missing": f"{s.MISSING_TEXT} no saved results yet.",
         "failed_seeds": f"{s.FAILED_SEED_MARK} some seeds failed (non-finite values in the tracked window, e.g. Stan's "
                         f"step-size adaptation failing); the cell averages over the other seeds. Failed seeds:",
@@ -616,7 +618,10 @@ class BiasHeatmaps:
         s = self.s
         notes = []
         if failed_cells:
-            notes.append(s.FOOTNOTES["failed_seeds"] + " " + "; ".join(failed_cells) + ".")
+            note = s.FOOTNOTES["failed_seeds"]
+            if self._hatched_style() and note.startswith(s.FAILED_SEED_MARK):
+                note = "Hatched cells: " + note[len(s.FAILED_SEED_MARK):].lstrip()
+            notes.append(note + " " + "; ".join(failed_cells) + ".")
         if adjusted_used:
             notes.append(s.FOOTNOTES["adjusted_transform"])
         for setup, note in s.SETUP_FOOTNOTES.items():
@@ -713,12 +718,14 @@ class BiasHeatmaps:
                         text[i][j] += s.ADJUSTED_TRANSFORM_MARK
                         adjusted_used = True
         failed_cells = []
+        hatched = np.zeros(values.shape, dtype=bool)
         if row_models is not None:
             for i, model in enumerate(row_models):
                 for j, column in enumerate(table.columns):
                     n_ok, n_seeds, partial = self.seed_failures.get((model, str(column)), (0, 0, []))
                     if available.iloc[i, j] and (n_ok < n_seeds or partial):
-                        text[i][j] += s.FAILED_SEED_MARK
+                        text[i][j] += "" if self._hatched_style() else s.FAILED_SEED_MARK
+                        hatched[i, j] = True
                         details = [f"{n_seeds - n_ok} of {n_seeds} seeds failed"] if n_ok < n_seeds else []
                         details += [f"{label} ≤ 0 in {n} of {n_seeds} seeds (left out of {label})" for label, n in partial]
                         detail = ", ".join(details)
@@ -737,7 +744,8 @@ class BiasHeatmaps:
                                        scale_type, colorscale, vmin, vmax, s.COLORBAR_TITLES.get(metric, ""), y_title or s.Y_AXIS_TITLE)
         elif s.PLOT_BACKEND == "matplotlib":
             fig = self._matplotlib_heatmap(values, text, row_labels, col_labels, title, fig_subtitle, fig_notes,
-                                           scale_type, colorscale, vmin, vmax, s.COLORBAR_TITLES.get(metric, ""), y_title or s.Y_AXIS_TITLE)
+                                           scale_type, colorscale, vmin, vmax, s.COLORBAR_TITLES.get(metric, ""), y_title or s.Y_AXIS_TITLE,
+                                           hatched=hatched)
         else:
             raise ValueError(f"PLOT_BACKEND must be 'plotly' or 'matplotlib', got {s.PLOT_BACKEND!r}")
         if save_name is not None and (s.SAVE_FIGURES or s.SAVE_TABLES):
@@ -765,6 +773,10 @@ class BiasHeatmaps:
             for note in notes:
                 print(note)
         return fig
+
+    def _hatched_style(self):
+        """Hatched failed-seed cells are marked by the hatching alone (no FAILED_SEED_MARK)."""
+        return bool(self.s.FAILED_SEED_HATCH) and self.s.PLOT_BACKEND == "matplotlib"
 
     def _column_group_sizes(self, n_cols):
         """Number of columns in each COLUMN_GROUPS panel (one panel if the groups don't cover the table)."""
@@ -835,7 +847,9 @@ class BiasHeatmaps:
                                xanchor="left", yanchor="top", font=dict(size=s.FONT_SIZE - 2))
         return fig
 
-    def _matplotlib_heatmap(self, values, text, row_labels, col_labels, title, subtitle, notes, scale_type, colorscale, vmin, vmax, colorbar_title, y_title):
+    def _matplotlib_heatmap(self, values, text, row_labels, col_labels, title, subtitle, notes, scale_type, colorscale, vmin, vmax, colorbar_title, y_title,
+                            hatched=None):
+        """hatched: boolean array, cells to hatch with FAILED_SEED_HATCH (over the colour, kept off the text)."""
         s = self.s
         n_rows, n_cols = values.shape
         sizes = self._column_group_sizes(n_cols)
@@ -862,6 +876,10 @@ class BiasHeatmaps:
             cols = slice(start, start + size)
             image = ax.imshow(masked[:, cols], cmap=cmap, norm=norm, aspect="auto")
             ax.set_xticks(range(size), labels=col_labels[cols], rotation=30, ha="right", fontsize=s.LABEL_FONT_SIZE)
+            failed = np.zeros((n_rows, size), dtype=bool) if hatched is None or not s.FAILED_SEED_HATCH else hatched[:, cols]
+            for i, j in zip(*np.nonzero(failed)):
+                ax.add_patch(Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, hatch=s.FAILED_SEED_HATCH, linewidth=0, zorder=2,
+                                       edgecolor="black"))
             if k == 0:
                 ax.set_yticks(range(n_rows), labels=row_labels, fontsize=s.LABEL_FONT_SIZE)
                 ax.set_ylabel(y_title, fontsize=s.VERTICAL_LABEL_FONT_SIZE)
@@ -872,8 +890,12 @@ class BiasHeatmaps:
                     for j in range(size):
                         value = values[i, start + j]
                         shade = norm(value) if (norm is not None and np.isfinite(value) and not np.ma.is_masked(masked[i, start + j])) else 1.0
-                        ax.text(j, i, text[i][start + j], ha="center", va="center", fontsize=s.FONT_SIZE - 4,
-                                color="white" if shade < 0.5 else "black")
+                        artist = ax.text(j, i, text[i][start + j], ha="center", va="center", fontsize=s.FONT_SIZE - 4,
+                                         color="white" if shade < 0.5 else "black")
+                        if failed[i, j]:
+                            # a box in the cell's own colour keeps the hatching off the text
+                            cell_color = s.MISSING_COLOR if np.ma.is_masked(masked[i, start + j]) else image.cmap(image.norm(value))
+                            artist.set_bbox(dict(facecolor=cell_color, edgecolor="none", pad=3))
             group_title = s.COLUMN_GROUP_TITLES[k] if k < len(s.COLUMN_GROUP_TITLES) and len(sizes) > 1 else ""
             if group_title:
                 ax.set_title(group_title, fontsize=s.FONT_SIZE - 1, fontweight="bold")
