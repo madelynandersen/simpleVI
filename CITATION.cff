@@ -12,7 +12,6 @@ authors:
 version: 0.1.0
 date-released: "2026-10-27"
 license: MIT
-repository-code: "https://github.com/madelynandersen/simplevi"
 keywords:
   - variational inference
   - ADVI

@@ -11,7 +11,7 @@ requires-python = ">=3.9"
 license = { file = "LICENSE" }
 
 authors = [
-  { name = "Madelyn Andersen", email = "madelyna@mit.edu" }
+  { name = "Madelyn Andersen" }
 ]
 
 # Core deps used by the reusable helpers imported from modulars.
@@ -22,10 +22,6 @@ dependencies = [
   "scipy>=1.10",
   "tqdm>=4.65",
 ]
-
-[project.urls]
-Homepage = "https://github.com/madelynandersen/simplevi"
-Repository = "https://github.com/madelynandersen/simplevi"
 
 [project.optional-dependencies]
 # NumPyro / JAX stack
