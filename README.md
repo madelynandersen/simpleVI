@@ -1,7 +1,7 @@
 # simpleVI
 
 Code for "The Curious Case of the Default Settings: Evaluating Default Performance of Variational Inference
-Software" (citation incoming; see `CITATION.cff`).
+Software" (citation incoming).
 
 simpleVI runs and compares mean-field ADVI in PyMC, NumPyro, TensorFlow Probability (TFP) and Stan (CmdStanPy in
 Python; rstan and cmdstanr in R for the Journé et al. reanalysis). Experiments not described in the manuscript
@@ -99,7 +99,7 @@ Notes:
 
 ```
 simpleVI/
-├── README.md, LICENSE, CITATION.cff
+├── README.md, LICENSE
 ├── pyproject.toml, setup.py      # installs modulars/ (pip install -e .)
 ├── print_versions.py             # prints the installed package versions (Table 5)
 ├── envs/                         # the four conda environments
