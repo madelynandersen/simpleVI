@@ -1,4 +1,0 @@
-package,label,setting,iterations,mc_samples,n_ok,n_failed,mean_s,sd_s,median_s,min_s,max_s,total_s
-numpyro,NumPyro ADVI default,default,75000,1,10,0,12.1573,1.6209905784906815,11.621,11.497,16.749,121.573
-numpyro,NumPyro full defaults,full_defaults,30000,1,10,0,5.1075,0.060648806894923545,5.0845,5.057,5.249,51.075
-numpyro,NumPyro ADVI adjusted (100 MC),mc100,75000,100,10,0,253.4611,0.4921644824423715,253.4135,252.736,254.339,2534.611

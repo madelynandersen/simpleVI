@@ -1,8 +1,0 @@
-Backend: cmdstanr | chains: 4 | post-warmup draws per chain: 9000 | parameters summarised: 71
-Divergent transitions: 0 of 36000
-Iterations at max tree depth (10): 0 (largest tree depth seen: 7)
-E-BFMI per chain: 0.71, 0.70, 0.69, 0.67
-Largest Rhat: 1.0009 (b_muPrB_Intercept)
-Smallest ESS: 7640 (lp__; bulk 7640, tail 14933)
-Parameters with Rhat >= 1.01: 0 | with bulk ESS < 400: 0 | with tail ESS < 400: 0
-Verdict: all checks passed

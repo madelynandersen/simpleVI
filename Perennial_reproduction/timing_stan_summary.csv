@@ -1,5 +1,0 @@
-package,label,setting,iterations,mc_samples,n_ok,n_failed,mean_s,sd_s,median_s,min_s,max_s,total_s,median_iterations_run
-stan,R ADVI adjusted (meanfield),adjusted,50000,100,10,0,730.5282,6.102409465849438,728.5145,724.69,743.957,7305.282000000001,NA
-stan,R ADVI default (meanfield),default,50000,1,10,0,12.3204,0.26845988734094134,12.312,11.954,12.7,123.20400000000001,NA
-stan,Stan MCMC (NUTS),mcmc,10000,NA,10,0,100.0193,2.1823603455382394,100.52000000000001,96.744,102.342,1000.1930000000001,10000
-stan,Stan full defaults,full_defaults,10000,1,10,0,0.3851,0.04761057305543242,0.383,0.317,0.498,3.8509999999999995,NA
