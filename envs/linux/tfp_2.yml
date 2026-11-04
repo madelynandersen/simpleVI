@@ -1,0 +1,35 @@
+# Linux (Engaging) version of envs/tfp_2.yml.
+# Key packages pinned to the versions the Mac env imports (checked 2026-11-04);
+# everything else is left to the solver. Build with cluster/remote/build_envs.sh.
+#
+# TensorFlow: the Mac env imports tf-nightly 2.20.0.dev20250616, which is no
+# longer on PyPI, so this uses stable tensorflow 2.20.0 instead.
+# tf-keras 2.18.0 matches the Mac; it pins tensorflow<2.19, so build_envs.sh
+# installs it separately with --no-deps (as it effectively is on the Mac).
+name: tfp_2
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12.11
+  - numpy=2.3.0
+  - scipy=1.15.2
+  - pandas=2.3.0
+  - jax=0.5.2
+  - jaxlib=0.5.2
+  - numpyro=0.18.0
+  - matplotlib=3.10.3
+  - seaborn=0.13.2
+  - plotly=6.9.0
+  - scikit-learn=1.7.0
+  - statsmodels=0.14.4
+  - tqdm=4.67.1
+  - ipykernel
+  - papermill=2.6.0
+  - pip
+  - pip:
+      - tensorflow==2.20.0
+      - keras==3.10.0
+      - tensorflow-probability==0.25.0
+      - cmdstanpy==1.2.5
+      - pynverse==0.1.4.6

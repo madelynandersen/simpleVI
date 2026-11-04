@@ -1,0 +1,68 @@
+{
+  "package": "numpyro",
+  "n_iters": 1000,
+  "python": "/Users/madelynandersen/miniconda3/envs/num_pyro/bin/python",
+  "variants": {
+    "default_1mc": {
+      "results": {
+        "production_vs_resumable_uninterrupted": {
+          "identical": true,
+          "max_abs_diff": 0.0,
+          "first_differing_iter": null
+        },
+        "every1_checkpointing_vs_no_checkpointing": {
+          "identical": false,
+          "max_abs_diff": 1.1920928955078125e-07,
+          "first_differing_iter": 719
+        },
+        "resume:kill_once_every1": {
+          "identical": true,
+          "max_abs_diff": 0.0,
+          "first_differing_iter": null
+        },
+        "resume:kill_twice_every1": {
+          "identical": false,
+          "max_abs_diff": 1.1920928955078125e-07,
+          "first_differing_iter": 719
+        },
+        "resume:kill_between_ckpts_e100": {
+          "identical": false,
+          "max_abs_diff": 1.1920928955078125e-07,
+          "first_differing_iter": 719
+        },
+        "resume:random_kills_every1": {
+          "identical": false,
+          "max_abs_diff": 1.1920928955078125e-07,
+          "first_differing_iter": 719
+        }
+      },
+      "logs": {
+        "kill_once_every1": [
+          "die_after=137: exit=-9 ['numpyro 0.18.0 | jax 0.4.35', 'FRESH start']",
+          "finish: exit=0 ['numpyro 0.18.0 | jax 0.4.35', 'RESUMED at 137', 'FINISHED']"
+        ],
+        "kill_twice_every1": [
+          "die_after=1: exit=-9 ['numpyro 0.18.0 | jax 0.4.35', 'FRESH start']",
+          "die_after=999: exit=-9 ['numpyro 0.18.0 | jax 0.4.35', 'RESUMED at 1']",
+          "finish: exit=0 ['numpyro 0.18.0 | jax 0.4.35', 'RESUMED at 999', 'FINISHED']"
+        ],
+        "kill_between_ckpts_e100": [
+          "die_after=350: exit=-9 ['numpyro 0.18.0 | jax 0.4.35', 'FRESH start']",
+          "die_after=777: exit=-9 ['numpyro 0.18.0 | jax 0.4.35', 'RESUMED at 300']",
+          "finish: exit=0 ['numpyro 0.18.0 | jax 0.4.35', 'RESUMED at 700', 'FINISHED']"
+        ],
+        "random_kills_every1": [
+          "random kill: 'numpyro 0.18.0 | jax 0.4.35', killed after PROGRESS 214 (target 214), exit=-9",
+          "random kill: 'numpyro 0.18.0 | jax 0.4.35', killed after PROGRESS 420 (target 420), exit=-9",
+          "random kill: 'numpyro 0.18.0 | jax 0.4.35', killed after PROGRESS 421 (target 153), exit=-9",
+          "finish: exit=0 ['numpyro 0.18.0 | jax 0.4.35', 'RESUMED at 421', 'FINISHED']"
+        ]
+      },
+      "seconds": {
+        "production": 1.1039659976959229,
+        "resumable_no_ckpt_incl_startup": 4.0729289054870605,
+        "resumable_ckpt_every_iter_incl_startup": 4.646544933319092
+      }
+    }
+  }
+}

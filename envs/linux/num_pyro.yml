@@ -1,0 +1,25 @@
+# Linux (Engaging) version of envs/num_pyro.yml.
+# Key packages pinned to the versions the Mac env imports (checked 2026-11-04);
+# everything else is left to the solver. Build with cluster/remote/build_envs.sh.
+name: num_pyro
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.13.2
+  - numpy=2.2.2
+  - scipy=1.15.1
+  - pandas=2.3.0
+  - jax=0.4.35
+  - jaxlib=0.4.35
+  - numpyro=0.18.0
+  - matplotlib=3.10.0
+  - seaborn=0.13.2
+  - plotly=6.9.0
+  - tqdm=4.67.1
+  - dill=0.4.0
+  - ipykernel
+  - pip
+  - pip:
+      - cmdstanpy==1.2.5
+      - pynverse==0.1.4.6

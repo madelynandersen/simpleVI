@@ -1,0 +1,30 @@
+# Linux (Engaging) version of envs/pymc_env_pm.yml.
+# Key packages pinned to the versions the Mac env imports (checked 2026-11-04);
+# everything else is left to the solver. Build with cluster/remote/build_envs.sh.
+# cxx-compiler: PyTensor compiles C code at run time (the Mac env has clang for this).
+name: pymc_env_pm
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11.13
+  - numpy=2.3.2
+  - scipy=1.16.0
+  - pandas=2.3.1
+  - pymc=5.25.1
+  - pytensor=2.31.7
+  - arviz=0.22.0
+  - jax=0.6.2
+  - jaxlib=0.6.2
+  - numpyro=0.18.0
+  - matplotlib-base=3.10.3
+  - seaborn=0.13.2
+  - plotly=6.9.0
+  - tqdm=4.67.1
+  - cxx-compiler
+  - ipykernel
+  - papermill=2.6.0
+  - pip
+  - pip:
+      - cmdstanpy==1.2.5
+      - pynverse==0.1.4.6

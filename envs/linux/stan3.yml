@@ -1,0 +1,24 @@
+# Linux (Engaging) version of envs/stan3.yml.
+# Key packages pinned to the versions the Mac env imports (checked 2026-11-04);
+# everything else is left to the solver. Build with cluster/remote/build_envs.sh.
+# cmdstan=2.39.0 installs CmdStan into the env (<env>/bin/cmdstan), which
+# stan_runner.py prefers over ~/.cmdstan -- same as on the Mac.
+name: stan3
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12.13
+  - numpy=2.4.6
+  - scipy=1.17.1
+  - pandas=3.0.3
+  - cmdstan=2.39.0
+  - cmdstanpy=1.3.0
+  - matplotlib=3.10.9
+  - tqdm=4.67.3
+  - nbformat
+  - ipykernel
+  - pip
+  - pip:
+      - plotly==6.9.0
+      - kaleido==1.4.0
