@@ -290,8 +290,8 @@ def default_settings(results_dir):
         "relative_sd": {
             "mean_between": "SD across seeds of (⟨μ⟩ divided by |μ*|)",
             "std_between": "SD across seeds of (⟨σ⟩ divided by σ*)",
-            "mean_within": "√(mean over seeds of the within-window variance of (μ divided by |μ*|))",
-            "std_within": "√(mean over seeds of the within-window variance of (σ divided by σ*))",
+            "mean_within": "mean over seeds of the within-window SD of (μ divided by |μ*|)",
+            "std_within": "mean over seeds of the within-window SD of (σ divided by σ*)",
         },
         "relative_var": {
             "mean_between": "variance across seeds of (⟨μ⟩ divided by |μ*|)",
@@ -682,7 +682,7 @@ class BiasHeatmaps:
             return ""
         if len({text for _, text in parts}) == 1:
             return "Runs: " + parts[0][1] + "."
-        return " ".join(f"Runs ({title[0].lower() + title[1:]})" + f": {text}." if title else f"Runs: {text}."
+        return " ".join(f"Runs ({' '.join(title.lower().split())})" + f": {text}." if title else f"Runs: {text}."
                         for title, text in parts)
 
     def _color_settings(self, metric, values):
@@ -917,6 +917,18 @@ class BiasHeatmaps:
         if notes:
             notes = [line for note in notes for line in textwrap.wrap(note, width=int(s.FIG_WIDTH / 6.5))]
             fig.text(0.01, 0.0, "\n".join(notes), ha="left", va="top", fontsize=s.FONT_SIZE - 4)
+        if len(axes) > 1:
+            # constrained layout widens each gap by the slanted column labels of the panel after it, so the gaps
+            # differ; keep its outer edges, then place the panels with equal column widths and COLUMN_GROUP_GAP gaps
+            fig.canvas.draw()
+            fig.set_layout_engine("none")
+            left, right = axes[0].get_position().x0, axes[-1].get_position().x1
+            unit = (right - left) / (sum(sizes) + s.COLUMN_GROUP_GAP * (len(sizes) - 1))
+            x = left
+            for ax, size in zip(axes, sizes):
+                box = ax.get_position()
+                ax.set_position([x, box.y0, size * unit, box.height])
+                x += (size + s.COLUMN_GROUP_GAP) * unit
         return fig
 
     def subtitle_for(self, metric, agg):

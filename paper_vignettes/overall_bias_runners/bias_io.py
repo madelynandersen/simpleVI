@@ -425,6 +425,10 @@ def per_coordinate_metrics(track, best_mean, best_std, window, ddof=1, zero_tol=
         }
         for key, variance in variances.items():
             metrics[key] = np.sqrt(variance) if noise_scale == "relative_sd" else variance
+        if noise_scale == "relative_sd":
+            # within-seed noise: SD over the window for each seed, then the mean of those SDs over seeds
+            metrics["mean_within"] = np.nanmean(np.nanstd(m_rel, axis=1, ddof=ddof), axis=0)
+            metrics["std_within"] = np.nanmean(np.nanstd(s_rel, axis=1, ddof=ddof), axis=0)
         standardized_errors = {
             "mean_bias": (m_bar - best_mean) / best_std,
             "std_bias": (s_bar - best_std) / best_std,
